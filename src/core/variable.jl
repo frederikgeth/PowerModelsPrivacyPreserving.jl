@@ -19,3 +19,8 @@ function variable_admittance(pm::PMs.AbstractPowerModel; nw::Int=pm.cnw, bounded
     report && PMs.sol_component_value(pm, nw, :branch, :g, PMs.ids(pm, nw, :branch), g)
     report && PMs.sol_component_value(pm, nw, :branch, :b, PMs.ids(pm, nw, :branch), b)
 end
+
+function variable_fuel_cost(pm::PMs.AbstractPowerModel, report::Bool=true)
+    # variable to store generation cost
+    cost = PMs.var(pm)[:cost] = JuMP.@variable(pm.model, cost)
+end

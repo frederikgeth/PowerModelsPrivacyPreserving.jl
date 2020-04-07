@@ -33,3 +33,19 @@ function constraint_ohms_to_variable_impedance(pm::PMs.AbstractPowerModel, i::In
 
     constraint_ohms_to_variable_impedance(pm, nw, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
 end
+
+
+""
+function constraint_loss_faithfulness(pm::PMs.AbstractPowerModel; nw::Int=pm.cnw)
+    loss = PMs.ref(pm, nw, :loss)
+
+    constraint_loss_faithfulness(pm, nw, loss["value"], loss["beta"])
+end
+
+
+""
+function constraint_cost_faithfulness(pm::PMs.AbstractPowerModel; nw::Int=pm.cnw)
+    cost = PMs.ref(pm, nw, :cost)
+
+    constraint_cost_faithfulness(pm, nw, cost["value"], cost["beta"])
+end

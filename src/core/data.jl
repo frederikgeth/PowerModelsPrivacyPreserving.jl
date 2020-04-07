@@ -1,10 +1,12 @@
-function calculate_losses!(res, data)
-    for (l, branch) in res["solution"]["branch"]
+function calculate_losses!(result, data)
+    for (l, branch) in result["solution"]["branch"]
         branch["ploss"] = branch["pf"] + branch["pt"]
     end
-    res["totalloss"] = sum(branch["ploss"] for (l, branch) in res["solution"]["branch"])
+    result["totalloss"] = sum(branch["ploss"] for (l, branch) in result["solution"]["branch"])
 
-    res["totalload"] = sum(load["pd"] for (l, load) in data["load"])
+    result["totalload"] = sum(load["pd"] for (l, load) in data["load"])
 
-    res["totalgen"] = sum(gen["pg"] for (l, gen) in res["solution"]["gen"])
+    result["totalgen"] = sum(gen["pg"] for (l, gen) in result["solution"]["gen"])
+
+    return result["totalloss"]
 end
