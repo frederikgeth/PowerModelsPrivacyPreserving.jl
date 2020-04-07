@@ -1,6 +1,6 @@
 ""
 function run_ac_opf_test(file, optimizer; kwargs...)
-    return run_opf_test(file, ACPPowerModel, optimizer; kwargs...)
+    return run_opf_test(file, PMs.ACPPowerModel, optimizer; kwargs...)
 end
 
 ""
@@ -11,7 +11,7 @@ end
 "This is the function that Fred has created that implements the existing ACOPF model 1 TODO: Confirm
 https://lanl-ansi.github.io/PowerModels.jl/stable/specifications/
 EV Modified to set objective to min fuel and flow cost"
-function build_opf_test(pm::AbstractPowerModel)
+function build_opf_test(pm::PMs.AbstractPowerModel)
     PMs.variable_voltage(pm)
     PMs.variable_generation(pm)
     PMs.variable_branch_flow(pm)

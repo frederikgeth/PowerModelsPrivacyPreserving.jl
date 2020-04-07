@@ -1,7 +1,7 @@
 
 ""
 function run_ac_opf_variable_impedance(file, optimizer; kwargs...)
-    return run_opf_variable_impedance(file, ACPPowerModel, optimizer; kwargs...)
+    return run_opf_variable_impedance(file, PMs.ACPPowerModel, optimizer; kwargs...)
 end
 
 ""
@@ -10,7 +10,7 @@ function run_opf_variable_impedance(file, model_type::Type, optimizer; kwargs...
 end
 
 "This is our new model in accordance with Algorithm 1 of the paper"
-function build_opf_variable_impedance(pm::AbstractPowerModel)
+function build_opf_variable_impedance(pm::PMs.AbstractPowerModel)
     # Comments reference slide 42 on installfest pdf
     PMs.variable_voltage(pm) # Variable in V_i in model 1 -> Constraint 1.3
     PMs.variable_generation(pm) # Variable S_i in model 1 -> Constraint 1.5
@@ -45,15 +45,4 @@ function build_opf_variable_impedance(pm::AbstractPowerModel)
     # for i in PMs.ids(pm, :dcline)
     #     PMs.constraint_dcline(pm, i)
     # end
-end
-
-function calculate_losses(res)
-    for (l, branch) in res["solution"]["branch"]
-        branch["ploss"] = branch["pf"] + branch["pt"]
-    end
-    res["totalloss"] = sum(branch["ploss"] for (l, branch) in res["solution"]["branch"])
-
-    res["totalload"] = sum(load["pd"] for (l, load) in data_unpert["load"])
-
-    res["totalgen"] = sum(gen["pg"] for (l, gen) in res["solution"]["gen"])
 end

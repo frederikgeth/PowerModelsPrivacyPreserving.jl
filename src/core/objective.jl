@@ -1,6 +1,6 @@
 "This function sets the objective to be the minimum losses. It was being used by
 Fred's function but I don't think we want to be using it for Algorithm 1"
-function minimum_losses(pm::AbstractPowerModel)
+function minimum_losses(pm::PMs.AbstractPowerModel)
     arcs_from = PMs.ref(pm, :arcs_from)
     p = PMs.var(pm, :p)
 
@@ -10,7 +10,7 @@ end
 
 
 "This function sets the objective s1 to minimize the distance the post-processed vector is from the privacy-preserved vector"
-function minimum_impedance_distance(pm::AbstractPowerModel)
+function minimum_impedance_distance(pm::PMs.AbstractPowerModel)
     branch_ids = PMs.ids(pm, :branch)
     branches = PMs.ref(pm, :branch)
 

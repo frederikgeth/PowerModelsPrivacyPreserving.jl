@@ -1,5 +1,5 @@
 "variable: `g[l] + im*b[l]` for `(l,i,j)` in `arcs`"
-function variable_admittance(pm::AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+function variable_admittance(pm::PMs.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     g = PMs.var(pm, nw)[:g] = JuMP.@variable(pm.model,
         [ l in PMs.ids(pm, nw, :branch)], base_name="$(nw)_g",
         # start = PMs.comp_start_value(PMs.ref(pm, nw, :branch, l), "y_start")

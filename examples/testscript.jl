@@ -1,16 +1,22 @@
 using Ipopt
-using PowerModelsPrivacyPreserving
+using Main.PowerModelsPrivacyPreserving
+using PowerModels
+using Distributions
+using Random
+
+const PMs = PowerModels
+const PMPP = Main.PowerModelsPrivacyPreserving
 
 
 ###############################################################################
 "Start working here"
 
 ipopt = Ipopt.Optimizer
-file =  "data/case5.m"
+file =  "test/data/matpower/case5.m"
 data_unpert = parse_file(file)
 data_pert = deepcopy(data_unpert)
 
-result_unpert = run_ac_opf_test(data_unpert, ipopt)
+result_unpert = PMPP.run_ac_opf_test(data_unpert, ipopt)
 
 # Apply laplace noise to the g values for each branch (eq 15)
 alpha = 0.01
@@ -54,6 +60,7 @@ lambda = 50
 data_pert["g_lb"] = mu_g / lambda
 data_pert["g_ub"] = mu_g * lambda
 # b is negative so need to swap the upper and lower bounds?
+
 # TODO: This must be wrong
 bb1 =mu_b * lambda
 bb2 =mu_b / lambda
@@ -66,7 +73,7 @@ data_pert["beta"] = 0.01
 # Set the O* value to be the result of the original model output
 data_pert["O_star"] = result_unpert["objective"]
 
-result_pert = run_ac_opf_variable_impedance(data_pert, ipopt)
+result_pert = PMPP.run_ac_opf_variable_impedance(data_pert, ipopt)
 
-calculate_losses(result_unpert)
-#calculate_losses(result_pert)
+PMPP.calculate_losses!(result_unpert, data_unpert)
+PMPP.calculate_losses!(result_pert, data_pert)
