@@ -1,0 +1,4 @@
+name = "PowerModelsPrivacyPreserving"
+uuid = "a27c61a6-5c60-4fe6-b0ac-e0b72d00bf3a"
+authors = ["Geth, Frederik (Energy, Newcastle) <Frederik.Geth@csiro.au>"]
+version = "0.1.0"
