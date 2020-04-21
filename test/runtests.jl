@@ -1,21 +1,30 @@
-using PowerModelsPrivacyPreserving
-using InfrastructureModels
+import PowerModelsPrivacyPreserving
+const PMPP = PowerModelsPrivacyPreserving
+
 import Memento
 
-# Suppress warnings during testing.
-Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
-PowerModels.logger_config!("error")
+import InfrastructureModels
 
-import Ipopt
+import PowerModels
+const PMs = PowerModels
+
+# Suppress warnings during testing.
+const TESTLOG = Memento.getlogger(PowerModels)
+Memento.setlevel!(TESTLOG, "error")
+
 import JuMP
+import Ipopt
 
 using Test
+using LinearAlgebra
+
+
 
 # default setup for solvers
 ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol=1e-6, print_level=0)
-ipopt_ws_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol=1e-6, mu_init=1e-4, print_level=0)
 
 @testset "PowerModelsPrivacyPreserving" begin
     include("opf.jl")
 
+    include("opf_impedance.jl")
 end
