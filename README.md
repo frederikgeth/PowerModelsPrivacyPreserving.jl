@@ -29,7 +29,9 @@ This code has been developed as part of the Privacy-Preserving Technology Energy
 
 - Andrew Feutrill (@afeutrill)
 - David Smith (@davidsmith2020)
+- Elliot Vercoe (@elliottd61)
 - Frederik Geth (@frederikgeth)
+- Jonathan Chan (@cha425)
 
 ## License
 
