@@ -21,7 +21,7 @@ PowerModelsPrivacyPreserving.jl is an extension package of PowerModels.jl, to ob
 
 ## Development
 
-Community-driven development and enhancement of PowerModelsDistribution are welcome and encouraged. Please develop in a fork or branch of this repo, and launch pull requests to integrate the code into master.
+Community-driven development and enhancement of PowerModelsPrivacyPreserving are welcome and encouraged. Please develop in a fork or branch of this repo, and launch pull requests to integrate the code into master.
 
 ## Acknowledgments
 
