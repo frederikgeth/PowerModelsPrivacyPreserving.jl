@@ -32,6 +32,7 @@ This code has been developed as part of the Privacy-Preserving Technology Energy
 - Elliot Vercoe (@elliottd61)
 - Frederik Geth (@frederikgeth)
 - Jonathan Chan (@cha425)
+- Ming Ding (@MingDing2019)
 
 ## License
 
