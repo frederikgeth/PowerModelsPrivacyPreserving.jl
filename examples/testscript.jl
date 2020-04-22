@@ -53,9 +53,17 @@ function add_impedance_perturbation!(data, distribution)
         b = imag(y)
         println("g is: ", g)
         println("b is: ", b)
-        r = g/b # Check that this is correct as it was a typo in paper?
-        pert_b = b + noise
-        pert_g = r * pert_b
+        
+        # the following codes have been changed by Ming Ding on Apr. 8th, 2020
+        # it would be better to follow the definition of r in Algorithm 1 and eq. (15)
+        # r = g/b # Check that this is correct as it was a typo in paper?
+        # pert_b = b + noise # noisy susceptances
+        # pert_g = r * pert_b # get noisy conductances
+
+        r = b/g # Algorithm 1 and eq. (15)
+        pert_g = g + noise # noisy conductances
+        pert_b = r * pert_g # get noisy susceptances
+
         branch["g_obj"] = pert_g
         branch["b_obj"] = pert_b
         println("perturbed g is: ", pert_g)
@@ -83,6 +91,8 @@ end
 # What should lambda value be? not clear in paper
 # I think this might be here to stop the system from spitting out negative
 # values. This has been a problem in another project I worked on.
+# Ming: My original understanding is that lambda = 3*alpha/eps. See the last paragraph, left column, page 4.
+# lambda = 50
 λ = 50
 
 # Add noisy mean limit values to our data dictionary
