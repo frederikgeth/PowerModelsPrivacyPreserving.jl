@@ -16,4 +16,5 @@ end
     @test isapprox(result["objective"], 0.0280012; atol = 1e-3)
 end
 
-# test a branch (Ming)
+
+# test-branch-MD
