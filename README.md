@@ -8,7 +8,7 @@ Clone the package through github desktop to a local folder.
 Enter package model through `]`. Run `(v1.3) pkg> develop --local "path/to/local/project_folder"`. You can confirm it's working if you see PowerModelsPrivacyPreserving in the list by running `(v1.3) pkg> status`.
 
 ### Using the built-in package manager first
-Install using the built-in package manager `(v1.3) pkg> add https://github.com/frederikgeth/PowerModelsPrivacyPreserving.jl.git`. Then put it in development mode through `(v1.3) pkg> add develop PowerModelsPrivacyPreserving`. Then you can point Github Dekstopp to the julia dev folder. Go to  `File -> Add local repository ...`  in Github Dekstop and then browse to `~\.julia\dev\PowerModelsPrivacyPreserving`
+Install using the built-in package manager `(v1.3) pkg> add https://github.com/frederikgeth/PowerModelsPrivacyPreserving.jl.git`. Then put it in development mode through `(v1.3) pkg> add develop PowerModelsPrivacyPreserving`. Then you can point Github Dekstop to the julia dev folder. Go to  `File -> Add local repository ...`  in Github Dekstop and then browse to `~\.julia\dev\PowerModelsPrivacyPreserving`. 
 
 
 ## Core Problem Specifications
