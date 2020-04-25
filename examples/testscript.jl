@@ -67,7 +67,7 @@ function add_impedance_perturbation!(data, distribution)
         branch["b_obj"] = pert_b
         r_shunt = g_shunt/b_shunt
         pert_b_shunt = b_shunt + noise_shunt
-        pert_g_shunt = r_shunt + pert_b_shunt
+        pert_g_shunt = g_shunt#r_shunt + pert_b_shunt
         branch["g_shunt_obj"] = pert_g_shunt
         branch["b_shunt_obj"] = pert_b_shunt
         println("perturbed g is: ", pert_g)
