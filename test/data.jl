@@ -7,10 +7,14 @@
     λ = 50
     # Apply the perturbation to this scenario
     perturbed_data = PMPP.create_impedance_perturbation(data, α, ϵ, λ)
-    # Check that the required parameters have been returned
+    # Check that the new parameters have been returned
     @test haskey(perturbed_data, "g_lb")
     @test haskey(perturbed_data, "g_ub")
     @test haskey(perturbed_data, "b_lb")
     @test haskey(perturbed_data, "b_ub")
+    # Check that all other required parameters have been returned
+    for (key, value) in data
+        @test haskey(perturbed_data, key)
+    end
 
 end
