@@ -27,4 +27,7 @@ ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol=1e-6, print_level=0)
     include("opf.jl")
 
     include("opf_impedance.jl")
+
+    include("data.jl")
+
 end

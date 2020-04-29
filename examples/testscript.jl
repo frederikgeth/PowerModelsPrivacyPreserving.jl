@@ -1,11 +1,11 @@
 using Ipopt
-using Main.PowerModelsPrivacyPreserving
+using PowerModelsPrivacyPreserving
 using PowerModels
 using Distributions
 using Random
 
 const PMs = PowerModels
-const PMPP = Main.PowerModelsPrivacyPreserving
+const PMPP = PowerModelsPrivacyPreserving
 
 
 ipopt = Ipopt.Optimizer
