@@ -12,13 +12,13 @@ jobs:
     strategy:
       matrix:
         version:
-          - '1.0'
+#           - '1.0'
           - '1.4'
-          - 'nightly'
+#           - 'nightly'
         os:
           - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+#           - macOS-latest
+#           - windows-latest
         arch:
           - x64
     steps:
@@ -29,21 +29,21 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
-  # Docs test currently fails as documentation is not set up. Might as well keep it here, can comment it out if necessary.
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1.0'
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - run: julia --project=docs docs/make.jl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+# Docs test currently fails as documentation is not set up. Uncomment the following lines when it is ready.
+#   docs:
+#     name: Documentation
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - uses: julia-actions/setup-julia@v1
+#         with:
+#           version: '1.0'
+#       - run: |
+#           julia --project=docs -e '
+#             using Pkg
+#             Pkg.develop(PackageSpec(path=pwd()))
+#             Pkg.instantiate()'
+#       - run: julia --project=docs docs/make.jl
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
