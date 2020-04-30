@@ -9,7 +9,7 @@ const PMPP = PowerModelsPrivacyPreserving
 
 
 ipopt = Ipopt.Optimizer
-file =  "/Users/feu004/Documents/PowerModelsPrivacyPreserving/test/data/matpower/case5.m"
+file =  "test/data/matpower/case5.m"
 data_unpert = parse_file(file)
 data_min_loss = deepcopy(data_unpert)
 data_min_cost = deepcopy(data_unpert)
