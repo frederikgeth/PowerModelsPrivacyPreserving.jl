@@ -24,15 +24,21 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
     for (l, branch) in data["branch"]
         noise = Random.rand(distribution, 1)[1]
         z = branch["br_r"] + im*branch["br_x"]
-        y = 1/z
+        y = 1 / z
         g = real(y)
         b = imag(y)
         # println("g is: ", g)
         # println("b is: ", b)
 
-        r = b / g # Algorithm 1 and eq. (15)
-        pert_g = g + noise # noisy conductances
-        pert_b = r * pert_g # get noisy susceptances
+        # Handle the case where resistance is 0 to avoid undefined behaviour
+        if branch["br_r"] != 0
+            r = b / g # Algorithm 1 and eq. (15)
+            pert_g = g + noise # noisy conductances
+            pert_b = r * pert_g # get noisy susceptances
+        else
+            pert_g = 0
+            pert_b = b + noise # Just apply perturbation to b
+        end
 
         branch["g_obj"] = pert_g
         branch["b_obj"] = pert_b
