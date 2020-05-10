@@ -13,9 +13,9 @@ using Random
 const PMs = PowerModels
 const PMPP = PowerModelsPrivacyPreserving
 
-function check_dataset_perturbation(file_path, α, ϵ, λ)
+function check_dataset_perturbation(test_directory, output_directory, filename, α, ϵ, λ)
     ipopt = Ipopt.Optimizer
-    data_unpert = parse_file(file_path)
+    data_unpert = parse_file(string(test_directory, filename))
     data_min_loss = deepcopy(data_unpert)
     data_min_cost = deepcopy(data_unpert)
 
@@ -46,21 +46,37 @@ function check_dataset_perturbation(file_path, α, ϵ, λ)
     result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, ipopt)
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
     @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+
+    # Write perturbed datasets to output file
+    println(string(output_directory, "pert_min_loss/", filename))
+    open(string(output_directory, "pert_min_loss/", filename), "w") do io
+        PMs.export_matpower(io, data_pert_min_loss)
+    end
+    open(string(output_directory, "pert_min_cost/", filename), "w") do io
+        PMs.export_matpower(io, data_pert_min_cost)
+    end
+
     return (result_pert_loss, result_pert_cost)
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-num_cases = 20
+# num_cases =
 
 test_directory = "test/data/pglib_tests/"
+output_directory = "test/test_perturbation_outputs/"
+try
+    mkdir(string(output_directory, "pert_min_loss"))
+    mkdir(string(output_directory, "pert_min_cost"))
+catch y
+    println("Folder already exists, continuing")
+end
 result_dict = Dict()
 # Sort the list of cases by size
 sorted_directory = sort(
     readdir(test_directory),
     by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
 )
-for filename in sorted_directory[1: num_cases]
+for filename in sorted_directory[23: end]
     println("Testing ", filename)
-    file_path = string(test_directory, filename)
-    result_dict[filename] = check_dataset_perturbation(file_path, 0.01, 1, 50)
+    result_dict[filename] = check_dataset_perturbation(test_directory, output_directory, filename, 0.01, 1, 50)
 end
