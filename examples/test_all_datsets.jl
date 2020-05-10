@@ -60,7 +60,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-# num_cases =
+num_cases = 20
 
 test_directory = "test/data/pglib_tests/"
 output_directory = "test/test_perturbation_outputs/"
@@ -76,7 +76,7 @@ sorted_directory = sort(
     readdir(test_directory),
     by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
 )
-for filename in sorted_directory[23: end]
+for filename in sorted_directory[1: num_cases]
     println("Testing ", filename)
     result_dict[filename] = check_dataset_perturbation(test_directory, output_directory, filename, 0.01, 1, 50)
 end
