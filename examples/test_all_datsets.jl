@@ -82,7 +82,11 @@ output_directory = "examples/test_perturbation_outputs/"
 try
     mkdir(output_directory)
 catch y
+<<<<<<< HEAD
     println("Output folder already exists, continuing")
+=======
+    println("Folder already exists, continuing")
+>>>>>>> Moved test case directory
 end
 try
     mkdir(string(output_directory, "pert_min_loss"))
