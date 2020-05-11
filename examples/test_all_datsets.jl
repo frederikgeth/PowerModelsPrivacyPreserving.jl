@@ -63,7 +63,12 @@ end
 num_cases = 20
 
 test_directory = "test/data/pglib_tests/"
-output_directory = "test/test_perturbation_outputs/"
+output_directory = "examples/test_perturbation_outputs/"
+try
+    mkdir(output_directory)
+catch y
+    println("Folder already exists, continuing")
+end
 try
     mkdir(string(output_directory, "pert_min_loss"))
     mkdir(string(output_directory, "pert_min_cost"))
