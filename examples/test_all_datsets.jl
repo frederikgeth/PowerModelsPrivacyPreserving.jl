@@ -1,7 +1,7 @@
 "This script will run the perturbation function on each case of increasing size
-(determined by the parameter num_cases) and attempt to solve. It includes asserts
-to check that the cases are being correctly solved. The output is fed to
-result_dict, which contains tuples indicating the
+(determined by the parameter num_cases) and attempt to solve. If a solution times
+out (at 3000 iterations) the result is written to the unsolved/ folder. Otherwise,
+the output of each run is fed to result_dict, which contains tuples indicating the
 (result_pert_loss, result_pert_cost)."
 
 using Ipopt
