@@ -41,11 +41,23 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
 
     result_pert_loss = PMPP.run_opf_variable_impedance_loss(data_pert_min_loss, ipopt)
     PMPP.calculate_losses!(result_pert_loss, data_pert_min_loss)
-    @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
+    # @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
+    if (result_pert_loss["termination_status"] != PMs.LOCALLY_SOLVED)
+        open(string(output_directory, "unsolved/", string(filename, "_unsolved")), "w") do io
+            PMs.export_matpower(io, data_pert_min_loss)
+        end
+        return
+    end
 
     result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, ipopt)
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
-    @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+    # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+    if (result_pert_cost["termination_status"] != PMs.LOCALLY_SOLVED)
+        open(string(output_directory, "unsolved/", string(filename, "_unsolved")), "w") do io
+            PMs.export_matpower(io, data_pert_min_cost)
+        end
+        return
+    end
 
     # Write perturbed datasets to output file
     println(string(output_directory, "pert_min_loss/", filename))
@@ -72,6 +84,7 @@ end
 try
     mkdir(string(output_directory, "pert_min_loss"))
     mkdir(string(output_directory, "pert_min_cost"))
+    mkdir(string(output_directory, "unsolved"))
 catch y
     println("Output subfolders already exist, continuing")
 end

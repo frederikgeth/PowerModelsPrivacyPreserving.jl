@@ -22,10 +22,10 @@ function variable_admittance(pm::PMs.AbstractPowerModel; nw::Int=pm.cnw, bounded
         JuMP.set_upper_bound(g[l], PMs.ref(pm, nw, :g_ub))
         JuMP.set_lower_bound(b[l], PMs.ref(pm, nw, :b_lb))
         JuMP.set_upper_bound(b[l],PMs.ref(pm, nw, :b_ub))
-        JuMP.set_lower_bound(g_shunt[l], PMs.ref(pm, nw, :g_shunt_lb))
-        JuMP.set_upper_bound(g_shunt[l], PMs.ref(pm, nw, :g_shunt_ub))
-        JuMP.set_lower_bound(b_shunt[l], PMs.ref(pm, nw, :b_shunt_lb))
-        JuMP.set_upper_bound(b_shunt[l],PMs.ref(pm, nw, :b_shunt_ub))
+        JuMP.set_lower_bound(g_shunt[l], PMs.ref(pm, nw, :g_lb_shunt))
+        JuMP.set_upper_bound(g_shunt[l], PMs.ref(pm, nw, :g_ub_shunt))
+        JuMP.set_lower_bound(b_shunt[l], PMs.ref(pm, nw, :b_lb_shunt))
+        JuMP.set_upper_bound(b_shunt[l],PMs.ref(pm, nw, :b_ub_shunt))
     end
 
     report && PMs.sol_component_value(pm, nw, :branch, :g, PMs.ids(pm, nw, :branch), g)
