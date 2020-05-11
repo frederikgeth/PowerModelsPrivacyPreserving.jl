@@ -28,11 +28,15 @@ function minimum_impedance_distance(pm::PMs.AbstractPowerModel)
 
     g = PMs.var(pm, :g)
     b = PMs.var(pm, :b)
+    g_shunt = PMs.var(pm, :g_shunt)
+    b_shunt = PMs.var(pm, :b_shunt)
 
     JuMP.@objective(pm.model, Min,
     sum(
     (g[l] - branches[l]["g_obj"])^2
+    + (g_shunt[l] - branches[l]["g_shunt_obj"])^2
     + (b[l] - branches[l]["b_obj"])^2
+    + (b_shunt[l] - branches[l]["b_shunt_obj"])^2
     for l in branch_ids))
 end
 
@@ -54,7 +58,7 @@ function objective_min_fuel_cost_quadratic(pm::PMs.AbstractPowerModel; report::B
             end
         end
     end
-    
+
     return JuMP.@objective(pm.model, Min,
         sum(
             sum( gen_cost[(n,i)] for (i,gen) in nw_ref[:gen] )

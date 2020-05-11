@@ -17,6 +17,8 @@ function constraint_ohms_from_variable_impedance(pm::PMs.AbstractACPModel, n::In
 
     b = PMs.var(pm, n, :b, l)
     g = PMs.var(pm, n, :g, l)    # g = y*r
+    b_fr = PMs.var(pm, n, :b_shunt, l)
+    g_fr = PMs.var(pm, n, :g_shunt, l)
 
     JuMP.@NLconstraint(pm.model, p_fr ==  (g+g_fr)/tm^2*vm_fr^2
     + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to))
@@ -45,6 +47,8 @@ function constraint_ohms_to_variable_impedance(pm::PMs.AbstractACPModel, n::Int,
     # r = g/b
     b = PMs.var(pm, n, :b, l)
     g = PMs.var(pm, n, :g, l)
+    b_to = PMs.var(pm, n, :b_shunt, l)
+    g_to = PMs.var(pm, n, :g_shunt, l)
     # g = y*r
 
     JuMP.@NLconstraint(pm.model, p_to ==  (g+g_to)*vm_to^2

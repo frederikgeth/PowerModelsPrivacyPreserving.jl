@@ -67,13 +67,13 @@ output_directory = "examples/test_perturbation_outputs/"
 try
     mkdir(output_directory)
 catch y
-    println("Folder already exists, continuing")
+    println("Output folder already exists, continuing")
 end
 try
     mkdir(string(output_directory, "pert_min_loss"))
     mkdir(string(output_directory, "pert_min_cost"))
 catch y
-    println("Folder already exists, continuing")
+    println("Output subfolders already exist, continuing")
 end
 result_dict = Dict()
 # Sort the list of cases by size
