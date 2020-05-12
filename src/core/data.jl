@@ -25,8 +25,9 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
     sum_b_shunt = 0
     for (l, branch) in data["branch"]
         noise = Random.rand(distribution, 1)[1]
+        noise_shunt = Random.rand(distribution, 1)[1]
         z = branch["br_r"] + im*branch["br_x"]
-        y = 1/z
+        y = 1 / z
         g = real(y)
         b = imag(y)
         g_shunt = branch["g_to"]
@@ -34,10 +35,17 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
         # println("g is: ", g)
         # println("b is: ", b)
 
-        r = b / g # Algorithm 1 and eq. (15)
-        pert_g = g + noise # noisy conductances
-        pert_b = r * pert_g # get noisy susceptances
-        r_shunt = g_shunt/b_shunt
+        # Handle the case where resistance is 0 to avoid undefined behaviour
+        if branch["br_r"] != 0
+            r = b / g # Algorithm 1 and eq. (15)
+            pert_g = g + noise # noisy conductances
+            pert_b = r * pert_g # get noisy susceptances
+        else
+            pert_g = 0
+            pert_b = b + noise # Just apply perturbation to b
+        end
+
+        r_shunt = g_shunt / b_shunt
         pert_b_shunt = b_shunt + noise_shunt
         pert_g_shunt = g_shunt # Removed the perturbation of g_shunt
 
@@ -59,8 +67,8 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
 
     μ_g = (1 / n) * sum_g + Random.rand(lap_μ, 1)[1] # Eq 16
     μ_b = (1 / n) * sum_b + Random.rand(lap_μ, 1)[1] # Eq 17
-    μ_g_shunt = (1 / n_branches) * sum_g_shunt + Random.rand(distribution, 1)[1]
-    μ_b_shunt = (1 / n_branches) * sum_b_shunt + Random.rand(distribution, 1)[1]
+    μ_g_shunt = (1 / n) * sum_g_shunt + Random.rand(distribution, 1)[1]
+    μ_b_shunt = (1 / n) * sum_b_shunt + Random.rand(distribution, 1)[1]
 
     # Add noisy mean limit values to our data dictionary
     # Note that we use min and max to handle negative parameters
