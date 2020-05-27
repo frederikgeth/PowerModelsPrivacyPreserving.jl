@@ -31,7 +31,13 @@ See https://www.youtube.com/watch?v=QVmU29rCjaA for an introduction to package d
 
 ## Development
 
-Community-driven development and enhancement of PowerModelsPrivacyPreserving are welcome and encouraged. Please develop in a fork or branch of this repo, and launch pull requests to integrate the code into master.
+Please develop in a branch (or a fork) of this repo, and launch pull requests to integrate the code into master (don't commit straight to master). Then assign a reviewer, and ask for a review. Only merge after approval. 
+
+Some guidelines on where to put code:
+- All the package code goes into `src`
+- All the unit test code `test`, and unit test data goes into `test\data`
+- Scripts go into `examples`
+- Don't add things to the root folder
 
 ## Acknowledgments
 
