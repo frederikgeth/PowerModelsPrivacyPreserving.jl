@@ -13,6 +13,21 @@ using Random
 const PMs = PowerModels
 const PMPP = PowerModelsPrivacyPreserving
 
+"https://stackoverflow.com/questions/48195775/how-to-pretty-print-nested-dicts-in-julia
+Adapted by EV to write to file"
+function pretty_print_to_file(io, d::Dict, pre=1)
+    for (k,v) in d
+        if typeof(v) <: Dict
+            s = "$(repr(k)) => "
+            write(io, join(fill(" ", pre)) * s * "\n")
+            pretty_print_to_file(io, v, pre+1+length(s))
+        else
+            write(io, join(fill(" ", pre)) * "$(repr(k)) => $(repr(v))" * "\n")
+        end
+    end
+    nothing
+end
+
 function check_dataset_perturbation(test_directory, output_directory, filename, α, ϵ, λ)
     ipopt = Ipopt.Optimizer
     data_unpert = parse_file(string(test_directory, filename))
@@ -39,41 +54,49 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     data_pert_min_loss = PMPP.create_impedance_perturbation(data_min_loss, α, ϵ, λ)
     data_pert_min_cost = PMPP.create_impedance_perturbation(data_min_cost, α, ϵ, λ)
 
+    # 1) Run solver for perturbed loss
     result_pert_loss = PMPP.run_opf_variable_impedance_loss(data_pert_min_loss, ipopt)
     PMPP.calculate_losses!(result_pert_loss, data_pert_min_loss)
     # @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
+
+    # Handle writing results to file based on success criteria
     if (result_pert_loss["termination_status"] != PMs.LOCALLY_SOLVED)
-        open(string(output_directory, "unsolved/", string(filename, "_unsolved")), "w") do io
-            PMs.export_matpower(io, data_pert_min_loss)
-        end
-        return
+        result_directory = "unsolved_min_loss/"
+    else
+        result_directory = "pert_min_loss/"
+    end
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
+        pretty_print_to_file(io, result_pert_loss)
+    end
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.txt", "w") do io
+        pretty_print_to_file(io, data_pert_min_loss)
     end
 
+    # 2) Run solver for perturbed cost
     result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, ipopt)
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
     # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+
+    # Handle writing results to file based on success criteria
     if (result_pert_cost["termination_status"] != PMs.LOCALLY_SOLVED)
-        open(string(output_directory, "unsolved/", string(filename, "_unsolved")), "w") do io
-            PMs.export_matpower(io, data_pert_min_cost)
-        end
-        return
+        result_directory = "unsolved_min_cost/"
+    else
+        result_directory = "pert_min_cost/"
     end
-
-    # Write perturbed datasets to output file
-    println(string(output_directory, "pert_min_loss/", filename))
-    open(string(output_directory, "pert_min_loss/", filename), "w") do io
-        PMs.export_matpower(io, data_pert_min_loss)
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
+        pretty_print_to_file(io, result_pert_loss)
     end
-    open(string(output_directory, "pert_min_cost/", filename), "w") do io
-        PMs.export_matpower(io, data_pert_min_cost)
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.txt", "w") do io
+        pretty_print_to_file(io, data_pert_min_loss)
     end
-
-    return (result_pert_loss, result_pert_cost)
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-num_cases = 20
+num_cases = 25
+start_case = 22
+start_index = 7
 
+# Make all directories for outputs
 test_directory = "test/data/pglib_tests/"
 output_directory = "examples/test_perturbation_outputs/"
 try
@@ -81,20 +104,34 @@ try
 catch y
     println("Output folder already exists, continuing")
 end
-try
-    mkdir(string(output_directory, "pert_min_loss"))
-    mkdir(string(output_directory, "pert_min_cost"))
-    mkdir(string(output_directory, "unsolved"))
-catch y
-    println("Output subfolders already exist, continuing")
-end
-result_dict = Dict()
-# Sort the list of cases by size
-sorted_directory = sort(
-    readdir(test_directory),
-    by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
-)
-for filename in sorted_directory[1: num_cases]
-    println("Testing ", filename)
-    result_dict[filename] = check_dataset_perturbation(test_directory, output_directory, filename, 0.01, 1, 50)
+
+for run_index = start_index:10
+    run_output_directory = output_directory * string(run_index) * "/"
+    try
+        mkdir(run_output_directory)
+    catch y
+        println("Iteration folder already exists, continuing")
+    end
+
+    try
+        mkdir(string(run_output_directory, "pert_min_loss"))
+        mkdir(string(run_output_directory, "pert_min_cost"))
+        mkdir(string(run_output_directory, "unsolved_min_loss"))
+        mkdir(string(run_output_directory, "unsolved_min_cost"))
+    catch y
+        println("Output subfolders already exist, continuing")
+    end
+
+    # Sort the list of cases by size
+    sorted_directory = sort(
+        readdir(test_directory),
+        by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
+    )
+    [println(directory) for directory in sorted_directory]
+    return
+    for filename in sorted_directory[start_case: num_cases]
+        println("Testing ", filename)
+        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 50)
+    end
+    global start_case = 1
 end
