@@ -78,8 +78,8 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
     PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
     # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
-    PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
 
+    # Handle writing results to file based on success criteria
     if (result_pert_cost["termination_status"] != PMs.LOCALLY_SOLVED)
         result_directory = "unsolved_min_cost/"
     else
