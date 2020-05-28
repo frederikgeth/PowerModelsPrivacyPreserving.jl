@@ -30,8 +30,8 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
         y = 1 / z
         g = real(y)
         b = imag(y)
-        g_shunt = branch["g_to"]
-        b_shunt = branch["b_to"]
+        g_shunt = branch["g_to"] #assumes it is equal to branch["g_fr"]
+        b_shunt = branch["b_to"] #assumes it is equal to branch["b_fr"]
         # println("g is: ", g)
         # println("b is: ", b)
 
@@ -80,6 +80,22 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
     data["g_ub_shunt"] = max(μ_g_shunt / λ, μ_g_shunt * λ)
     data["b_lb_shunt"] = min(μ_b_shunt / λ, μ_b_shunt * λ)
     data["b_ub_shunt"] = max(μ_b_shunt / λ, μ_b_shunt * λ)
+    @show data["b_lb_shunt"], data["b_ub_shunt"]
 
     return data
+end
+
+
+function overwrite_impedances_in_data!(result, data)
+    for (l, branch) in result["solution"]["branch"]
+        y = branch["g"] + im* branch["b"]
+        z = 1/y
+        r = real(z)
+        x = imag(z)
+        b = branch["b_shunt"]
+        data["branch"][l]["br_r"] = r
+        data["branch"][l]["br_x"] = x
+        data["branch"][l]["b_fr"] = b
+        data["branch"][l]["b_to"] = b
+    end
 end
