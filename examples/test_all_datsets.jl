@@ -69,13 +69,14 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
         pretty_print_to_file(io, result_pert_loss)
     end
-    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.txt", "w") do io
-        pretty_print_to_file(io, data_pert_min_loss)
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.m", "w") do io
+        PMs.export_matpower(io, data_pert_min_loss)
     end
 
     # 2) Run solver for perturbed cost
     result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, ipopt)
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
+    PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
     # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
     PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
 
@@ -87,15 +88,15 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
         pretty_print_to_file(io, result_pert_loss)
     end
-    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.txt", "w") do io
-        pretty_print_to_file(io, data_pert_min_loss)
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.m", "w") do io
+        PMs.export_matpower(io, data_pert_min_loss)
     end
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-num_cases = 25
-start_case = 22
-start_index = 7
+num_cases = 20
+start_case = 1
+start_index = 1
 
 # Make all directories for outputs
 test_directory = "test/data/pglib_tests/"
@@ -128,8 +129,6 @@ for run_index = start_index:10
         readdir(test_directory),
         by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
     )
-    [println(directory) for directory in sorted_directory]
-    return
     for filename in sorted_directory[start_case: num_cases]
         println("Testing ", filename)
         check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 50)
