@@ -13,6 +13,9 @@ Install using the built-in package manager `(v1.3) pkg> add https://github.com/f
 ### Package development in Julia
 See https://www.youtube.com/watch?v=QVmU29rCjaA for an introduction to package development in Julia.
 
+## Use enviroments
+In package mode, in the root of PowerModelsPrivacyPreserving, write `activate ./` to create an environment for the project. Run `activate` to go back to the root.
+
 ## Core Problem Specifications
 
 - Optimal Power Flow (opf) with maximum load delivery
