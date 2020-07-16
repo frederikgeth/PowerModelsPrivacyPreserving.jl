@@ -9,6 +9,7 @@ using PowerModelsPrivacyPreserving
 using PowerModels
 using Distributions
 using Random
+using JuMP
 
 const PMs = PowerModels
 const PMPP = PowerModelsPrivacyPreserving
@@ -29,13 +30,14 @@ function pretty_print_to_file(io, d::Dict, pre=1)
 end
 
 function check_dataset_perturbation(test_directory, output_directory, filename, α, ϵ, λ)
-    ipopt = Ipopt.Optimizer
+    # ipopt = Ipopt.Optimizer
+    optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 600.0)
     data_unpert = parse_file(string(test_directory, filename))
     data_min_loss = deepcopy(data_unpert)
     data_min_cost = deepcopy(data_unpert)
 
     "this is the canonical OPF problem with generation cost minimization"
-    result_unpert_cost = PMPP.run_ac_opf_cost(data_unpert, ipopt)
+    result_unpert_cost = PMPP.run_ac_opf_cost(data_unpert, optimizer)
     PMPP.calculate_losses!(result_unpert_cost, data_unpert)
     "store faithfulness info"
     data_min_cost["cost"] = Dict()
@@ -43,7 +45,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     data_min_cost["cost"]["beta"] = 1
 
     "this variant of the OPF problem minimizes grid losses instead of generation cost"
-    result_unpert_loss = PMPP.run_ac_opf_loss(data_unpert, ipopt)
+    result_unpert_loss = PMPP.run_ac_opf_loss(data_unpert, optimizer)
     PMPP.calculate_losses!(result_unpert_loss, data_unpert)
     "store faithfulness info"
     data_min_loss["loss"] = Dict()
@@ -55,16 +57,18 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     data_pert_min_cost = PMPP.create_impedance_perturbation(data_min_cost, α, ϵ, λ)
 
     # 1) Run solver for perturbed loss
-    result_pert_loss = PMPP.run_opf_variable_impedance_loss(data_pert_min_loss, ipopt)
+    result_pert_loss = PMPP.run_opf_variable_impedance_loss(data_pert_min_loss, optimizer)
     PMPP.calculate_losses!(result_pert_loss, data_pert_min_loss)
     PMPP.overwrite_impedances_in_data!(result_pert_loss, data_pert_min_loss)
     # @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
 
     # Handle writing results to file based on success criteria
-    if (result_pert_loss["termination_status"] != PMs.LOCALLY_SOLVED)
-        result_directory = "unsolved_min_loss/"
-    else
+    if (result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED)
         result_directory = "pert_min_loss/"
+    elseif (result_pert_loss["termination_status"] == PMs.TIME_LIMIT)
+        result_directory = "timed_out_min_loss/"
+    else
+        result_directory = "failed_min_loss/"
     end
     open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
         pretty_print_to_file(io, result_pert_loss)
@@ -74,16 +78,18 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     end
 
     # 2) Run solver for perturbed cost
-    result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, ipopt)
+    result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, optimizer)
     PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
     PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
     # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
 
     # Handle writing results to file based on success criteria
-    if (result_pert_cost["termination_status"] != PMs.LOCALLY_SOLVED)
-        result_directory = "unsolved_min_cost/"
-    else
+    if (result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED)
         result_directory = "pert_min_cost/"
+    elseif (result_pert_cost["termination_status"] == PMs.TIME_LIMIT)
+        result_directory = "timed_out_min_cost/"
+    else
+        result_directory = "failed_min_cost/"
     end
     open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
         pretty_print_to_file(io, result_pert_loss)
@@ -94,9 +100,9 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-num_cases = 20
-start_case = 1
-start_index = 1
+# num_cases = 40
+start_case = 41
+start_index = 7
 
 # Make all directories for outputs
 test_directory = "test/data/pglib_tests/"
@@ -118,8 +124,10 @@ for run_index = start_index:10
     try
         mkdir(string(run_output_directory, "pert_min_loss"))
         mkdir(string(run_output_directory, "pert_min_cost"))
-        mkdir(string(run_output_directory, "unsolved_min_loss"))
-        mkdir(string(run_output_directory, "unsolved_min_cost"))
+        mkdir(string(run_output_directory, "failed_min_loss"))
+        mkdir(string(run_output_directory, "failed_min_cost"))
+        mkdir(string(run_output_directory, "timed_out_min_loss"))
+        mkdir(string(run_output_directory, "timed_out_min_cost"))
     catch y
         println("Output subfolders already exist, continuing")
     end
@@ -129,7 +137,7 @@ for run_index = start_index:10
         readdir(test_directory),
         by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
     )
-    for filename in sorted_directory[start_case: num_cases]
+    for filename in sorted_directory[start_case: end]
         println("Testing ", filename)
         check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 50)
     end
