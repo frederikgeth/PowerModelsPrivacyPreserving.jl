@@ -29,7 +29,7 @@ function pretty_print_to_file(io, d::Dict, pre=1)
     nothing
 end
 
-function check_dataset_perturbation(test_directory, output_directory, filename, α, ϵ, λ)
+function check_dataset_perturbation(test_directory, output_directory, filename, α, β, ϵ, λ)
     # ipopt = Ipopt.Optimizer
     optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 600.0)
     data_unpert = parse_file(string(test_directory, filename))
@@ -42,7 +42,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     "store faithfulness info"
     data_min_cost["cost"] = Dict()
     data_min_cost["cost"]["value"] = result_unpert_cost["objective"]
-    data_min_cost["cost"]["beta"] = 1
+    data_min_cost["cost"]["beta"] = β
 
     "this variant of the OPF problem minimizes grid losses instead of generation cost"
     result_unpert_loss = PMPP.run_ac_opf_loss(data_unpert, optimizer)
@@ -50,7 +50,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     "store faithfulness info"
     data_min_loss["loss"] = Dict()
     data_min_loss["loss"]["value"] = result_unpert_loss["totalloss"]
-    data_min_loss["loss"]["beta"] = 1
+    data_min_loss["loss"]["beta"] = β
 
     # Add impedance perturbation to both data dictionaries.
     data_pert_min_loss = PMPP.create_impedance_perturbation(data_min_loss, α, ϵ, λ)
@@ -61,6 +61,15 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     PMPP.calculate_losses!(result_pert_loss, data_pert_min_loss)
     PMPP.overwrite_impedances_in_data!(result_pert_loss, data_pert_min_loss)
     # @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
+
+    # Check the value of r_pert]
+    output_r_values = Dict()
+    for (l, branch) in result_pert_loss["solution"]["branch"]
+        output_r_values[l] = Dict()
+        output_r_values[l]["r_original"] = data_unpert["branch"][l]["br_r"]
+        output_r_values[l]["r_pert"] = branch["g"] / (branch["g"] ^ 2 + branch["b"]^2)
+        output_r_values[l]["r_pert_ratio"] = output_r_values[l]["r_pert"] / output_r_values[l]["r_original"]
+    end
 
     # Handle writing results to file based on success criteria
     if (result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED)
@@ -77,31 +86,36 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
         PMs.export_matpower(io, data_pert_min_loss)
     end
 
-    # 2) Run solver for perturbed cost
-    result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, optimizer)
-    PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
-    PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
-    # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+    # Write r_pert to file
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_r_ratio.txt", "w") do io
+        pretty_print_to_file(io, output_r_values)
+    end
 
-    # Handle writing results to file based on success criteria
-    if (result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED)
-        result_directory = "pert_min_cost/"
-    elseif (result_pert_cost["termination_status"] == PMs.TIME_LIMIT)
-        result_directory = "timed_out_min_cost/"
-    else
-        result_directory = "failed_min_cost/"
-    end
-    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
-        pretty_print_to_file(io, result_pert_loss)
-    end
-    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.m", "w") do io
-        PMs.export_matpower(io, data_pert_min_loss)
-    end
+    # # 2) Run solver for perturbed cost
+    # result_pert_cost = PMPP.run_opf_variable_impedance_cost(data_pert_min_cost, optimizer)
+    # PMPP.calculate_losses!(result_pert_cost, data_pert_min_cost)
+    # PMPP.overwrite_impedances_in_data!(result_pert_cost, data_pert_min_cost)
+    # # @assert result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED
+    #
+    # # Handle writing results to file based on success criteria
+    # if (result_pert_cost["termination_status"] == PMs.LOCALLY_SOLVED)
+    #     result_directory = "pert_min_cost/"
+    # elseif (result_pert_cost["termination_status"] == PMs.TIME_LIMIT)
+    #     result_directory = "timed_out_min_cost/"
+    # else
+    #     result_directory = "failed_min_cost/"
+    # end
+    # open(output_directory * result_directory * filename[1:length(filename) - 2] * "_result.txt", "w") do io
+    #     pretty_print_to_file(io, result_pert_loss)
+    # end
+    # open(output_directory * result_directory * filename[1:length(filename) - 2] * "_data.m", "w") do io
+    #     PMs.export_matpower(io, data_pert_min_loss)
+    # end
 end
 
 "Set the variable num_cases to determine how many cases to solve"
 num_cases = 40
-start_case = 1
+start_case = 22
 start_index = 1
 
 # Make all directories for outputs
@@ -139,7 +153,7 @@ for run_index = start_index:10
     )
     for filename in sorted_directory[start_case: num_cases]
         println("Testing ", filename)
-        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 50)
+        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 1, 50)
     end
     global start_case = 1
 end
