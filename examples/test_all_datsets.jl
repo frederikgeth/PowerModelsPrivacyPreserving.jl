@@ -29,7 +29,7 @@ function pretty_print_to_file(io, d::Dict, pre=1)
     nothing
 end
 
-function check_dataset_perturbation(test_directory, output_directory, filename, α, ϵ, λ)
+function check_dataset_perturbation(test_directory, output_directory, filename, α, β, ϵ, λ)
     # ipopt = Ipopt.Optimizer
     optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 600.0)
     data_unpert = parse_file(string(test_directory, filename))
@@ -42,7 +42,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     "store faithfulness info"
     data_min_cost["cost"] = Dict()
     data_min_cost["cost"]["value"] = result_unpert_cost["objective"]
-    data_min_cost["cost"]["beta"] = 1
+    data_min_cost["cost"]["beta"] = β
 
     "this variant of the OPF problem minimizes grid losses instead of generation cost"
     result_unpert_loss = PMPP.run_ac_opf_loss(data_unpert, optimizer)
@@ -50,7 +50,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     "store faithfulness info"
     data_min_loss["loss"] = Dict()
     data_min_loss["loss"]["value"] = result_unpert_loss["totalloss"]
-    data_min_loss["loss"]["beta"] = 1
+    data_min_loss["loss"]["beta"] = β
 
     # Add impedance perturbation to both data dictionaries.
     data_pert_min_loss = PMPP.create_impedance_perturbation(data_min_loss, α, ϵ, λ)
@@ -139,7 +139,7 @@ for run_index = start_index:10
     )
     for filename in sorted_directory[start_case: num_cases]
         println("Testing ", filename)
-        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 50)
+        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 1, 50)
     end
     global start_case = 1
 end
