@@ -5,8 +5,9 @@
     α = 0.01
     ϵ = 1
     λ = 50
+    p = 0.95
     # Apply the perturbation to this scenario
-    perturbed_data = PMPP.create_impedance_perturbation(data, α, ϵ, λ)
+    perturbed_data = PMPP.create_impedance_perturbation(data, α, ϵ, λ, p)
     # Check that the new parameters have been returned
     @test haskey(perturbed_data, "g_lb")
     @test haskey(perturbed_data, "g_ub")

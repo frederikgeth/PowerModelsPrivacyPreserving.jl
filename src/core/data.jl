@@ -13,7 +13,7 @@ end
 
 "This function accepts a data dictionary, and returns a new data dictionary
 with perturbation applied"
-function create_impedance_perturbation(data_input, α, ϵ, λ)
+function create_impedance_perturbation(data_input, α, ϵ, λ, p)
     # Create a copy of the input so that a new dataset is returned
     data = deepcopy(data_input)
 
@@ -64,22 +64,47 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
     n = length(data["branch"])
     lap_μ = Distributions.Laplace(0, 3 * α / (n * ϵ))
 
-    μ_g = (1 / n) * sum_g + Random.rand(lap_μ, 1)[1] # Eq 16
-    μ_b = (1 / n) * sum_b + Random.rand(lap_μ, 1)[1] # Eq 17
+    # μ_g = (1 / n) * sum_g + Random.rand(lap_μ, 1)[1] # Eq 16
+    # μ_b = (1 / n) * sum_b + Random.rand(lap_μ, 1)[1] # Eq 17
     μ_g_shunt = (1 / n) * sum_g_shunt + Random.rand(distribution, 1)[1]
     μ_b_shunt = (1 / n) * sum_b_shunt + Random.rand(distribution, 1)[1]
 
     # Add noisy mean limit values to our data dictionary
     # Note that we use min and max to handle negative parameters
-    data["g_lb"] = min(μ_g / λ, μ_g * λ)
-    data["g_ub"] = max(μ_g / λ, μ_g * λ)
-    data["b_lb"] = min(μ_b / λ, μ_b * λ)
-    data["b_ub"] = max(μ_b / λ, μ_b * λ)
+    # data["g_lb"] = min(μ_g / λ, μ_g * λ)
+    # data["g_ub"] = max(μ_g / λ, μ_g * λ)
+    # data["b_lb"] = min(μ_b / λ, μ_b * λ)
+    # data["b_ub"] = max(μ_b / λ, μ_b * λ)
     data["g_lb_shunt"] = min(μ_g_shunt / λ, μ_g_shunt * λ)
     data["g_ub_shunt"] = max(μ_g_shunt / λ, μ_g_shunt * λ)
     data["b_lb_shunt"] = min(μ_b_shunt / λ, μ_b_shunt * λ)
     data["b_ub_shunt"] = max(μ_b_shunt / λ, μ_b_shunt * λ)
-    @show data["b_lb_shunt"], data["b_ub_shunt"]
+
+
+    # Modify constraints s4 and s5 according to work by Ming Ding
+    μ_g = (1 / n) * sum_g
+    μ_b = (1 / n) * sum_b
+    mean_offset = log(2 * (1 - p))
+
+    if (μ_g >= 0)
+        data["g_lb"] = μ_g / λ - mean_offset
+        data["g_ub"] = μ_g * λ + mean_offset * λ ^ 2
+    else
+        data["g_lb"] = μ_g * λ - mean_offset * λ ^ 2
+        data["g_ub"] = μ_g / λ + mean_offset
+    end
+
+    if (μ_b >= 0)
+        data["b_lb"] = μ_b / λ - mean_offset
+        data["b_ub"] = μ_b * λ + mean_offset * λ ^ 2
+    else
+        data["b_lb"] = μ_b * λ - mean_offset * λ ^ 2
+        data["b_ub"] = μ_b / λ + mean_offset
+    end
+    @show μ_g, μ_b, mean_offset
+    @show data["g_lb"], data["g_ub"]
+    @show data["b_lb"], data["b_ub"]
+
 
     return data
 end
