@@ -62,13 +62,18 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     PMPP.overwrite_impedances_in_data!(result_pert_loss, data_pert_min_loss)
     # @assert result_pert_loss["termination_status"] == PMs.LOCALLY_SOLVED
 
-    # Check the value of r_pert]
+    # Check how the r and x parameters have been perturbed and postprocessed
     output_r_values = Dict()
     for (l, branch) in result_pert_loss["solution"]["branch"]
         output_r_values[l] = Dict()
+
         output_r_values[l]["r_original"] = data_unpert["branch"][l]["br_r"]
-        output_r_values[l]["r_pert"] = branch["g"] / (branch["g"] ^ 2 + branch["b"]^2)
+        output_r_values[l]["r_pert"] = real(1 / (branch["g"] + branch["b"]im))
         output_r_values[l]["r_pert_ratio"] = output_r_values[l]["r_pert"] / output_r_values[l]["r_original"]
+
+        output_r_values[l]["x_original"] = data_unpert["branch"][l]["br_x"]
+        output_r_values[l]["x_pert"] = imag(1 / (branch["g"] + branch["b"]im))
+        output_r_values[l]["x_pert_ratio"] = output_r_values[l]["x_pert"] / output_r_values[l]["x_original"]
     end
 
     # Handle writing results to file based on success criteria
@@ -87,7 +92,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
     end
 
     # Write r_pert to file
-    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_r_ratio.txt", "w") do io
+    open(output_directory * result_directory * filename[1:length(filename) - 2] * "_rx_ratios.txt", "w") do io
         pretty_print_to_file(io, output_r_values)
     end
 
@@ -115,7 +120,7 @@ end
 
 "Set the variable num_cases to determine how many cases to solve"
 num_cases = 40
-start_case = 22
+start_case = 1
 start_index = 1
 
 # Make all directories for outputs
@@ -153,7 +158,7 @@ for run_index = start_index:10
     )
     for filename in sorted_directory[start_case: num_cases]
         println("Testing ", filename)
-        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.01, 1, 1, 50)
+        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.1, 1, 1, 50)
     end
     global start_case = 1
 end
