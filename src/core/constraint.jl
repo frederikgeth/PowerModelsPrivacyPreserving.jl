@@ -6,19 +6,19 @@ p[f_idx] ==  (g+g_fr)/tm*v[f_bus]^2 + (-g*tr+b*ti)/tm^2*(v[f_bus]*v[t_bus]*cos(t
 q[f_idx] == -(b+b_fr)/tm*v[f_bus]^2 - (-b*tr-g*ti)/tm^2*(v[f_bus]*v[t_bus]*cos(t[f_bus]-t[t_bus])) + (-g*tr+b*ti)/tm^2*(v[f_bus]*v[t_bus]*sin(t[f_bus]-t[t_bus]))
 ```
 """
-function constraint_ohms_from_variable_impedance(pm::PMs.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+function constraint_ohms_from_variable_impedance(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
     (l,i,j) = f_idx
-    p_fr  = PMs.var(pm, n,  :p, f_idx)
-    q_fr  = PMs.var(pm, n,  :q, f_idx)
-    vm_fr = PMs.var(pm, n, :vm, f_bus)
-    vm_to = PMs.var(pm, n, :vm, t_bus)
-    va_fr = PMs.var(pm, n, :va, f_bus)
-    va_to = PMs.var(pm, n, :va, t_bus)
+    p_fr  = _PM.var(pm, n,  :p, f_idx)
+    q_fr  = _PM.var(pm, n,  :q, f_idx)
+    vm_fr = _PM.var(pm, n, :vm, f_bus)
+    vm_to = _PM.var(pm, n, :vm, t_bus)
+    va_fr = _PM.var(pm, n, :va, f_bus)
+    va_to = _PM.var(pm, n, :va, t_bus)
 
-    b = PMs.var(pm, n, :b, l)
-    g = PMs.var(pm, n, :g, l)    # g = y*r
-    b_fr = PMs.var(pm, n, :b_shunt, l)
-    g_fr = PMs.var(pm, n, :g_shunt, l)
+    b = _PM.var(pm, n, :b, l)
+    g = _PM.var(pm, n, :g, l)    # g = y*r
+    b_fr = _PM.var(pm, n, :b_shunt, l)
+    g_fr = _PM.var(pm, n, :g_shunt, l)
 
     JuMP.@NLconstraint(pm.model, p_fr ==  (g+g_fr)/tm^2*vm_fr^2
     + (-g*tr+b*ti)/tm^2*(vm_fr*vm_to*cos(va_fr-va_to))
@@ -35,20 +35,20 @@ p[t_idx] ==  (g+g_to)*v[t_bus]^2 + (-g*tr-b*ti)/tm^2*(v[t_bus]*v[f_bus]*cos(t[t_
 q[t_idx] == -(b+b_to)*v[t_bus]^2 - (-b*tr+g*ti)/tm^2*(v[t_bus]*v[f_bus]*cos(t[f_bus]-t[t_bus])) + (-g*tr-b*ti)/tm^2*(v[t_bus]*v[f_bus]*sin(t[t_bus]-t[f_bus]))
 ```
 """
-function constraint_ohms_to_variable_impedance(pm::PMs.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
+function constraint_ohms_to_variable_impedance(pm::_PM.AbstractACPModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
     (l,i,j) = f_idx
-    p_to  = PMs.var(pm, n,  :p, t_idx)
-    q_to  = PMs.var(pm, n,  :q, t_idx)
-    vm_fr = PMs.var(pm, n, :vm, f_bus)
-    vm_to = PMs.var(pm, n, :vm, t_bus)
-    va_fr = PMs.var(pm, n, :va, f_bus)
-    va_to = PMs.var(pm, n, :va, t_bus)
+    p_to  = _PM.var(pm, n,  :p, t_idx)
+    q_to  = _PM.var(pm, n,  :q, t_idx)
+    vm_fr = _PM.var(pm, n, :vm, f_bus)
+    vm_to = _PM.var(pm, n, :vm, t_bus)
+    va_fr = _PM.var(pm, n, :va, f_bus)
+    va_to = _PM.var(pm, n, :va, t_bus)
 
     # r = g/b
-    b = PMs.var(pm, n, :b, l)
-    g = PMs.var(pm, n, :g, l)
-    b_to = PMs.var(pm, n, :b_shunt, l)
-    g_to = PMs.var(pm, n, :g_shunt, l)
+    b = _PM.var(pm, n, :b, l)
+    g = _PM.var(pm, n, :g, l)
+    b_to = _PM.var(pm, n, :b_shunt, l)
+    g_to = _PM.var(pm, n, :g_shunt, l)
     # g = y*r
 
     JuMP.@NLconstraint(pm.model, p_to ==  (g+g_to)*vm_to^2
@@ -65,9 +65,9 @@ Defines the faithfullness in terms of grid losses
 we split this in two constraints to deal with the absolute value
 |x| <= y iff x <=y and -x<=y
 """
-function constraint_loss_faithfulness(pm::PMs.AbstractPowerModel, n::Int, ref_loss, beta)
-    arcs_from = PMs.ref(pm, :arcs_from)
-    p = PMs.var(pm, :p)
+function constraint_loss_faithfulness(pm::_PM.AbstractPowerModel, n::Int, ref_loss, beta)
+    arcs_from = _PM.ref(pm, :arcs_from)
+    p = _PM.var(pm, :p)
 
     loss = sum(p[(l,i,j)] + p[(l,j,i)] for (l,i,j) in arcs_from)
 
@@ -76,8 +76,8 @@ function constraint_loss_faithfulness(pm::PMs.AbstractPowerModel, n::Int, ref_lo
 end
 
 
-function constraint_cost_faithfulness(pm::PMs.AbstractPowerModel, n::Int, ref_cost, beta)
-    cost = PMs.var(pm, :cost)
+function constraint_cost_faithfulness(pm::_PM.AbstractPowerModel, n::Int, ref_cost, beta)
+    cost = _PM.var(pm, :cost)
 
     JuMP.@constraint(pm.model, (cost - ref_cost)/(ref_cost) <= beta)
     JuMP.@constraint(pm.model, (ref_cost - cost)/(ref_cost) <= beta)
@@ -85,11 +85,11 @@ end
 
 
 "Supporting only quadratic cost functions for generators breaks compatibility with Matpower to some extent"
-function constraint_fuel_cost_quadratic(pm::PMs.AbstractPowerModel)
+function constraint_fuel_cost_quadratic(pm::_PM.AbstractPowerModel)
     gen_cost = Dict()
-    for (n, nw_ref) in PMs.nws(pm)
+    for (n, nw_ref) in _PM.nws(pm)
         for (i,gen) in nw_ref[:gen]
-            pg = sum( PMs.var(pm, n, :pg, i)[c] for c in PMs.conductor_ids(pm, n) )
+            pg = sum( _PM.var(pm, n, :pg, i)[c] for c in _PM.conductor_ids(pm, n) )
 
             if length(gen["cost"]) == 1
                 gen_cost[(n,i)] = gen["cost"][1]
@@ -103,10 +103,19 @@ function constraint_fuel_cost_quadratic(pm::PMs.AbstractPowerModel)
         end
     end
 
-    cost = PMs.var(pm, :cost)
+    cost = _PM.var(pm, :cost)
     JuMP.@constraint(pm.model, cost ==
         sum(
             sum( gen_cost[(n,i)] for (i,gen) in nw_ref[:gen] )
-        for (n, nw_ref) in PMs.nws(pm))
+        for (n, nw_ref) in _PM.nws(pm))
             )
+end
+
+function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, pmax, qmin, qmax, eta)
+    pg = _PM.var(pm, n, :pg, i)
+    qg = _PM.var(pm, n, :qg, i)
+    d = Distributions.Normal()
+    z = Distributions.quantile(d,eta)
+
+    # JuMP.@constraint(pm.model, (cost - ref_cost)/(ref_cost) <= beta)
 end
