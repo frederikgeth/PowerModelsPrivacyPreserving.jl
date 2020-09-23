@@ -61,10 +61,10 @@ end
 
 "variable: `pg[j]` for `j` in `gen`"
 function variable_gen_power_including_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
-    
-    pgdict = Dict(gen["pg"] -  for (i, gen) in _PM.ref(pm,nw, :gen))
-    
-    pg = _PM.var(pm, nw)[:pg] 
+
+    pgdict = Dict(gen["pmax"] for (i, gen) in _PM.ref(pm,nw, :gen))
+
+    pg = _PM.var(pm, nw)[:pg]
 
     report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
 end
