@@ -71,7 +71,8 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     end
     for i in _PM.ids(pm, :branch)
         _PM.constraint_power_losses(pm, i)
-        _PM.constraint_voltage_magnitude_difference(pm, i)
+        # _PM.constraint_voltage_magnitude_difference(pm, i)
+        constraint_voltage_magnitude_difference_cc(pm, i)
 
         # _PM.constraint_voltage_angle_difference(pm, i)
 

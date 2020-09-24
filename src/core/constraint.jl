@@ -119,3 +119,16 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
 
     # JuMP.@constraint(pm.model, (cost - ref_cost)/(ref_cost) <= beta)
 end
+
+
+"""
+Defines voltage drop over a branch, linking from and to side voltage magnitude
+"""
+function constraint_voltage_magnitude_difference_cc(pm::AbstractBFAModel, n::Int, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+    p_fr = var(pm, n, :p, f_idx)
+    q_fr = var(pm, n, :q, f_idx)
+    w_fr = var(pm, n, :w, f_bus)
+    w_to = var(pm, n, :w, t_bus)
+
+    JuMP.@constraint(pm.model, (w_fr/tm^2) - w_to ==  2*(r*p_fr + x*q_fr))
+end

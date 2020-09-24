@@ -56,3 +56,20 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
     gen = _PM.ref(pm, nw, :gen, i)
     constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], gen["eta"])
 end
+
+
+function constraint_voltage_magnitude_difference_cc(pm::AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    branch = ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+    t_idx = (i, t_bus, f_bus)
+
+    r = branch["br_r"]
+    x = branch["br_x"]
+    g_sh_fr = branch["g_fr"]
+    b_sh_fr = branch["b_fr"]
+    tm = branch["tap"]
+
+    constraint_voltage_magnitude_difference_cc(pm, nw, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+end
