@@ -1,3 +1,6 @@
+"""Comments referencing Differential Private Optimal Power Flow for Distribution
+Grids - Dvorkin et al"""
+
 ""
 function run_opf_bf_dvorkin(file, model_type::Type{T}, optimizer; kwargs...) where T <: _PM.AbstractBFModel
     return _PM.run_model(file, model_type, optimizer, build_opf_bf_dvorkin; kwargs...)
@@ -34,6 +37,7 @@ function build_opf_bf_dvorkin(pm::_PM.AbstractPowerModel)
         _PM.constraint_thermal_limit_to(pm, i)
     end
 
+    # We aren't using dcline for our problem so commented out
     # for i in ids(pm, :dcline)
     #     constraint_dcline_power_losses(pm, i)
     # end
@@ -66,9 +70,18 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     for i in _PM.ids(pm, :bus)
         _PM.constraint_power_balance(pm, i)
     end
-    for i in _PM.ids(pm, :gen)
-        constraint_gen_bounds_cc(pm,i)
-    end
+
+    # # Set (2b)
+    # for i in _PM.ids(pm, :branch)
+    #     constraint_balancing_condition(pm, i)
+    # end
+    #
+    # # Set (4c) and (4d)
+    # for i in _PM.ids(pm, :gen)
+    #     constraint_gen_bounds_cc(pm, i)
+    # end
+
+
     for i in _PM.ids(pm, :branch)
         _PM.constraint_power_losses(pm, i)
         _PM.constraint_voltage_magnitude_difference(pm, i)
@@ -79,6 +92,7 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
         # _PM.constraint_thermal_limit_to(pm, i)
     end
 
+    # We aren't using dcline for our problem so commented out
     # for i in ids(pm, :dcline)
     #     constraint_dcline_power_losses(pm, i)
     # end

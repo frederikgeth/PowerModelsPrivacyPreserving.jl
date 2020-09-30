@@ -98,3 +98,145 @@ function overwrite_impedances_in_data!(result, data)
         data["branch"][l]["b_to"] = b
     end
 end
+
+
+"Helper function to accept a node, and return a list of adjacent branches to iterate through"
+function get_adjacent_branches(data, current_bus, target_branch)
+    adjacent_branches = []
+    for (i, branch) in data["branch"]
+        # Check each branch to see which branches connect to the current node
+        # Don't include the target branch
+        if (branch["f_bus"] == current_bus["bus_i"] || branch["t_bus"] == current_bus["bus_i"]) && target_branch["index"] != branch["index"]
+            push!(adjacent_branches, branch)
+        end
+    end
+    return adjacent_branches
+end
+
+
+"Helper function to find the root node in a model"
+function get_root_bus(data)
+    for (i, bus) in data["bus"]
+        if bus["bus_type"] == 3
+            return parse(Int, i)
+        end
+    end
+    return 0
+end
+
+
+"Recursive function to find all nodes on a given side of a branch"
+function recursive_connected_nodes(data, target_branch, current_bus, connected_bus_set)
+    # If we have already visited this node, return
+    if current_bus["bus_i"] in connected_bus_set
+        return
+    end
+    # We are exploring this node, so add it to the explored set
+    push!(connected_bus_set, current_bus["bus_i"])
+
+    # Loop through each adjacent branch and explore recursively
+    for adjacent_branch in get_adjacent_branches(data, current_bus, target_branch)
+        recursive_connected_nodes(data, target_branch, data["bus"][string(adjacent_branch["t_bus"])], connected_bus_set)
+        recursive_connected_nodes(data, target_branch, data["bus"][string(adjacent_branch["f_bus"])], connected_bus_set)
+    end
+
+end
+
+
+"Depth First Search to find the path from a node to the root node"
+function dfs_to_root(data, target_branch, current_bus, dfs_stack, root_bus_id)
+    # If we have already visited this node, return
+    if current_bus["bus_i"] in dfs_stack
+        return false
+    end
+    # We are exploring this node, so add it to the explored set
+    push!(dfs_stack, current_bus["bus_i"])
+
+    # If this is the root node, exit DFS
+    if current_bus["bus_i"] == root_bus_id
+        return true
+    end
+
+    # Loop through each adjacent branch and explore recursively
+    # If we find the root node, exit DFS
+    for adjacent_branch in get_adjacent_branches(data, current_bus, target_branch)
+        if dfs_to_root(data, target_branch, data["bus"][string(adjacent_branch["t_bus"])], dfs_stack, root_bus_id)
+            return true
+        end
+        if dfs_to_root(data, target_branch, data["bus"][string(adjacent_branch["f_bus"])], dfs_stack, root_bus_id)
+            return true
+        end
+    end
+    pop!(dfs_stack)
+    return false
+
+end
+
+""
+function set_upstream_downstream_nodes!(data, target_branch)
+    # For the given branch, explore all buses to the f side of it
+    # println("Looking for f nodes for branch ", target_branch["index"])
+    f_direction_buses = Vector{Int}()
+    closest_f_bus = data["bus"][string(target_branch["f_bus"])]
+    recursive_connected_nodes(data, target_branch, closest_f_bus, f_direction_buses)
+    # println(f_direction_buses)
+    # println()
+
+    # For the given branch, explore all buses to the t side of it
+    # println("Looking for t nodes for branch ", target_branch["index"])
+    t_direction_buses = Vector{Int}()
+    closest_t_bus = data["bus"][string(target_branch["t_bus"])]
+    recursive_connected_nodes(data, target_branch, closest_t_bus, t_direction_buses)
+    # println(t_direction_buses)
+    # println()
+
+    # Find the root node
+    root_bus_id = get_root_bus(data)
+
+    # Check both sides of the branch for the root node. Then do a depth first search
+    # to find only the nodes that are upstream
+    upstream_nodes = []
+    if root_bus_id in f_direction_buses
+        downstream_nodes = t_direction_buses
+        dfs_to_root(data, target_branch, closest_f_bus, upstream_nodes, root_bus_id)
+    else
+        downstream_nodes = f_direction_buses
+        dfs_to_root(data, target_branch, closest_t_bus, upstream_nodes, root_bus_id)
+    end
+
+    # println("upstream_nodes are ")
+    # println(upstream_nodes)
+    # println("downstream_nodes are ")
+    # println(downstream_nodes
+    # println()
+
+    target_branch["upstream_nodes"] = upstream_nodes
+    target_branch["downstream_nodes"] = downstream_nodes
+
+end
+
+function create_network_diagram!(data)
+    # For each branch, build a mapping of upstream and downstream nodes
+    for (i, branch) in data["branch"]
+        set_upstream_downstream_nodes!(data, branch)
+    end
+
+end
+
+function set_chance_constraint_etas!(data, η_g, η_u, η_f)
+    # for (i, gen) in data["gen"]
+    #     gen["eta"] = η_g
+    # end
+    data["η_g"] = η_g
+    data["η_u"] = η_u
+    data["η_f"] = η_f
+end
+
+
+function set_privacy_parameters!(data, δ, ϵ)
+    for (i, branch) in data["branch"]
+        # TODO: Set beta to a value based on d_P (what is d_P?)
+        β = 0.1 # Ref: DP_CC_OPF.jl line 44
+        branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+    end
+end
