@@ -8,7 +8,7 @@ const PM = PowerModels
 const PMPP = PowerModelsPrivacyPreserving
 
 ipopt = Ipopt.Optimizer
-file =  "test/data/test_radial/nesta_case9_kds__rad.m"
+file =  "test/data/matpower/nesta_case9_kds__rad.m"
 data = PM.parse_file(file)
 
 

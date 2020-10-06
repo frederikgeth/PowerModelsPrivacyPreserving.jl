@@ -111,9 +111,12 @@ function constraint_fuel_cost_quadratic(pm::_PM.AbstractPowerModel)
             )
 end
 
-function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, pmax, qmin, qmax, η)
+function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, pmax, qmin, qmax, η, upstream_sigmas, downstream_sigmas)
     pg = _PM.var(pm, n, :pg, i)
     qg = _PM.var(pm, n, :qg, i)
+
+    alpha = _PM.var(pm, n, :alpha)
+    
     # d = Distributions.Normal()
     # z = Distributions.quantile(d, eta)
     Φ(x) = quantile(Normal(0, 1), x)
@@ -124,8 +127,17 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     arg_q = []
     # For each line
     for j in L
-        arg_p = push!(arg_p, Φ(1 - η)  * σ[j] * α[i, j] * T[i + 1, j])
-        arg_q = push!(arg_q, Φ(1 - η)  * σ[j] * α[i, j] * T[i + 1, j] * node[i].tan_ϕ)
+        # arg_p = push!(arg_p, Φ(1 - η)  * σ[j] * α[i, j] * T[i + 1, j])
+        # arg_q = push!(arg_q, Φ(1 - η)  * σ[j] * α[i, j] * T[i + 1, j] * node[i].tan_ϕ)
+
+
     end
 
+    JuMP.@constraint(pm.model, sum(alpha[i,l] for (l, σ) in upstream_sigmas) == 1)
+    JuMP.@constraint(pm.model, sum(alpha[i,l] for (l, σ) in downstream_sigmas) == 1)
+
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * alpha[i, l]).^2 for (l, σ) in upstream_sigmas) <= (pmax - pg[i])^2)
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * alpha[i, l]).^2 for (l, σ) in upstream_sigmas) <= (pg[i] - pmin)^2)
+
+    #TODO add for generator reactive power
 end

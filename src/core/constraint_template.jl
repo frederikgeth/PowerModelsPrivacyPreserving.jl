@@ -54,7 +54,20 @@ end
 ""
 function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     gen = _PM.ref(pm, nw, :gen, i)
-    constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], gen["eta"])
+    bus = gen["gen_bus"]
+
+    upstream_sigmas = Dict()
+    downstream_sigmas = Dict()
+    
+    for (l, branch) in _PM.ref(pm, nw, :branch)
+        if bus ∈ branch["upstream_nodes"]
+            upstream_sigmas[l] = branch["σ"] 
+        end
+        if bus ∈ branch["downstream_nodes"]
+            downstream_sigmas[l] = branch["σ"]
+        end
+    end 
+    constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], gen["η"], upstream_sigmas, downstream_sigmas)
 end
 
 

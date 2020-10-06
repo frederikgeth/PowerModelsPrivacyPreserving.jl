@@ -40,31 +40,29 @@ function variable_fuel_cost(pm::_PM.AbstractPowerModel, report::Bool=true)
 end
 
 
-"variable: `alpha[j]` for `j` in `gen`"
+"variable: `alpha[g,l]` for `g` in `gen`, l in `branch`"
 function variable_gen_power_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     alpha = _PM.var(pm, nw)[:alpha] = JuMP.@variable(pm.model,
-        [i in _PM.ids(pm, nw, :gen)], base_name="$(nw)_alpha",
-        start = _PM.comp_start_value(_PM.ref(pm, nw, :gen, i), "alpha_start")
+        [g in _PM.ids(pm, nw, :gen), l in _PM.ids(pm, nw, :branch)], base_name="$(nw)_alpha",
+        # start = _PM.comp_start_value(_PM.ref(pm, nw, :gen, i), "alpha_start")
     )
-
     if bounded
-        for (i, gen) in _PM.ref(pm, nw, :gen)
+        for (g, gen) in _PM.ref(pm, nw, :gen)
             gen["pmax"]==0 ? ub = 0 : ub = 1
-            JuMP.set_lower_bound(alpha[i], 0)
-            JuMP.set_upper_bound(alpha[i], ub)
+            JuMP.set_lower_bound.(alpha[g,:], 0)
+            JuMP.set_upper_bound.(alpha[g,:], ub)
         end
     end
-
-    report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
+    # report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
 end
 
 
-"variable: `pg[j]` for `j` in `gen`"
-function variable_gen_power_including_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+# "variable: `pg[j]` for `j` in `gen`"
+# function variable_gen_power_including_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
     
-    pgdict = Dict(gen["pmax"] for (i, gen) in _PM.ref(pm,nw, :gen))
+#     pgdict = Dict(gen["pmax"] for (i, gen) in _PM.ref(pm,nw, :gen))
     
-    pg = _PM.var(pm, nw)[:pg] 
+#     pg = _PM.var(pm, nw)[:pg] 
 
-    report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
-end
+#     report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
+# end
