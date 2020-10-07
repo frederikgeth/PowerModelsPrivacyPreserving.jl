@@ -125,7 +125,7 @@ function get_root_bus(data)
 end
 
 
-"Recursive function to find all nodes on a given side of a branch"
+"Recursive Breadth First Search function to find all nodes on a given side of a branch"
 function recursive_connected_nodes(data, target_branch, current_bus, connected_bus_set)
     # If we have already visited this node, return
     if current_bus["bus_i"] in connected_bus_set
@@ -143,7 +143,7 @@ function recursive_connected_nodes(data, target_branch, current_bus, connected_b
 end
 
 
-"Depth First Search to find the path from a node to the root node"
+"Recursive Depth First Search to find the path from a node to the root node"
 function dfs_to_root(data, target_branch, current_bus, dfs_stack, root_bus_id)
     # If we have already visited this node, return
     if current_bus["bus_i"] in dfs_stack
@@ -173,7 +173,7 @@ function dfs_to_root(data, target_branch, current_bus, dfs_stack, root_bus_id)
 end
 
 ""
-function set_upstream_downstream_nodes!(data, target_branch)
+function set_upstream_downstream_nodes_branches!(data, target_branch)
     # For the given branch, explore all buses to the f side of it
     # println("Looking for f nodes for branch ", target_branch["index"])
     f_direction_buses = Vector{Int}()
@@ -204,29 +204,42 @@ function set_upstream_downstream_nodes!(data, target_branch)
         dfs_to_root(data, target_branch, closest_t_bus, upstream_nodes, root_bus_id)
     end
 
-    # println("upstream_nodes are ")
-    # println(upstream_nodes)
-    # println("downstream_nodes are ")
-    # println(downstream_nodes
-    # println()
-
     target_branch["upstream_nodes"] = upstream_nodes
     target_branch["downstream_nodes"] = downstream_nodes
+
+    # Iterate through each branch, and check if it's upstream or downstream
+    downstream_branches = Vector{Int}()
+    upstream_branches = Vector{Int}()
+    for (l, branch) in data["branch"]
+        # Don't include the current branch in the set
+        if branch["index"] == target_branch["index"]
+            continue
+        end
+        # If the branch connects to any downstream node, the branch must be downstream
+        if branch["f_bus"] in downstream_nodes || branch["t_bus"] in downstream_nodes
+            push!(downstream_branches, branch["index"])
+        end
+        # If the branch connects 1 upstream node to another upstream node, the branch is in
+        # the path to the root node
+        if branch["f_bus"] in upstream_nodes && branch["t_bus"] in upstream_nodes
+            push!(upstream_branches, branch["index"])
+        end        
+    end
+
+    target_branch["upstream_branches"] = upstream_branches
+    target_branch["downstream_branches"] = downstream_branches
 
 end
 
 function create_network_diagram!(data)
     # For each branch, build a mapping of upstream and downstream nodes
     for (i, branch) in data["branch"]
-        set_upstream_downstream_nodes!(data, branch)
+        set_upstream_downstream_nodes_branches!(data, branch)
     end
 
 end
 
 function set_chance_constraint_etas!(data, η_g, η_u, η_f)
-    # for (i, gen) in data["gen"]
-    #     gen["eta"] = η_g
-    # end
     data["η_g"] = η_g
     data["η_u"] = η_u
     data["η_f"] = η_f

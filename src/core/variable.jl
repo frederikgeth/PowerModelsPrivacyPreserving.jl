@@ -40,29 +40,19 @@ function variable_fuel_cost(pm::_PM.AbstractPowerModel, report::Bool=true)
 end
 
 
-"variable: `alpha[g,l]` for `g` in `gen`, l in `branch`"
-function variable_gen_power_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
-    alpha = _PM.var(pm, nw)[:alpha] = JuMP.@variable(pm.model,
-        [g in _PM.ids(pm, nw, :gen), l in _PM.ids(pm, nw, :branch)], base_name="$(nw)_alpha",
-        # start = _PM.comp_start_value(_PM.ref(pm, nw, :gen, i), "alpha_start")
+"variable: `α[n,l]` for `n` in `bus`, l in `branch`"
+function variable_alpha_power_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, report::Bool=true)
+    # Declare the alpha matrix, and initialize each value as 0
+    α = _PM.var(pm, nw)[:α] = JuMP.@variable(
+        pm.model,
+        [n in _PM.ids(pm, nw, :bus), l in _PM.ids(pm, nw, :branch)], 
+        base_name="$(nw)α",
+        start=0
     )
-    if bounded
-        for (g, gen) in _PM.ref(pm, nw, :gen)
-            gen["pmax"]==0 ? ub = 0 : ub = 1
-            JuMP.set_lower_bound.(alpha[g,:], 0)
-            JuMP.set_upper_bound.(alpha[g,:], ub)
-        end
+    for (n, bus) in _PM.ref(pm, nw, :bus)
+        JuMP.set_lower_bound.(α[n,:], 0)
+        JuMP.set_upper_bound.(α[n,:], 1)
     end
-    # report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
+
 end
 
-
-# "variable: `pg[j]` for `j` in `gen`"
-# function variable_gen_power_including_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
-    
-#     pgdict = Dict(gen["pmax"] for (i, gen) in _PM.ref(pm,nw, :gen))
-    
-#     pg = _PM.var(pm, nw)[:pg] 
-
-#     report && _IM.sol_component_value(pm, nw, :gen, :alpha, _PM.ids(pm, nw, :gen), alpha)
-# end

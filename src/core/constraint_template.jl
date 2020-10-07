@@ -51,6 +51,12 @@ function constraint_cost_faithfulness(pm::_PM.AbstractPowerModel; nw::Int=pm.cnw
 end
 
 
+function constraint_alpha_summation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    branch_i = _PM.ref(pm, nw, :branch, i)
+    constraint_alpha_summation(pm, nw, i, branch_i["upstream_nodes"], branch_i["downstream_nodes"])
+end
+
+
 ""
 function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     η_g = _PM.ref(pm, nw, :η_g)
@@ -60,6 +66,9 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
     upstream_sigmas = Dict()
     downstream_sigmas = Dict()
     
+    # Check each branch to determine whether the current node is located upstream 
+    # or downstream relative to this node. Store the value of sigma for each of these 
+    # connected branches.
     for (l, branch) in _PM.ref(pm, nw, :branch)
         if bus ∈ branch["upstream_nodes"]
             upstream_sigmas[l] = branch["σ"] 
@@ -71,3 +80,23 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
     constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], η_g, upstream_sigmas, downstream_sigmas)
 end
 
+
+""
+function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    η_u = _PM.ref(pm, nw, :η_u)
+    branch_i = _PM.ref(pm, nw, :branch, i)
+
+    for j in branch_i["upstream_branches"]
+        branch_j = _PM.ref(pm, nw, :branch, j)
+        r = branch_j["br_r"]
+        x = branch_j["br_x"]
+
+        for k in branch_j["upstream_branches"]
+            branch_k = _PM.ref(pm, nw, :branch, k)
+
+        end
+
+    end
+
+    # constraint_voltage_bounds_cc(pm, nw, i, η_u)
+end

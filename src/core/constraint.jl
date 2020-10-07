@@ -111,20 +111,39 @@ function constraint_fuel_cost_quadratic(pm::_PM.AbstractPowerModel)
             )
 end
 
+"Set equation (2b)"
+function constraint_alpha_summation(pm::_PM.AbstractPowerModel, n::Int, i, upstream_nodes, downstream_nodes)
+    α = _PM.var(pm, n, :α)
+    JuMP.@constraint(pm.model, sum(α[j, i] for j in upstream_nodes) == 1)
+    JuMP.@constraint(pm.model, sum(α[j, i] for j in downstream_nodes) == 1)
+end
+
+
 function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, pmax, qmin, qmax, η, upstream_sigmas, downstream_sigmas)
+    # Retrieve values from the powermodel to be used in our constraints
     pg = _PM.var(pm, n, :pg, i)
     qg = _PM.var(pm, n, :qg, i)
-
-    alpha = _PM.var(pm, n, :alpha)
+    α = _PM.var(pm, n, :α)
+    tanϕ = 0.5 # TODO: Work out how we calculate ϕ - this is hardcoded in Dvorkin as 0.5
     
+    # Helper function to handle the inverse cdf
     Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
 
+    # Set the downstream branches to be negative and merge our dictionaries
+    connected_branches_sigmas = merge(upstream_sigmas, Dict(l => -σ for (l, σ) in downstream_sigmas))
 
-    JuMP.@constraint(pm.model, sum(alpha[i,l] for (l, σ) in upstream_sigmas) == 1)
-    JuMP.@constraint(pm.model, sum(alpha[i,l] for (l, σ) in downstream_sigmas) == 1)
+    # Equation (4c) / (4d) for generator active power
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pmax - pg[i])^2)
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pg[i] - pmin)^2)
 
-    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * alpha[i, l]).^2 for (l, σ) in upstream_sigmas) <= (pmax - pg[i])^2)
-    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * alpha[i, l]).^2 for (l, σ) in upstream_sigmas) <= (pg[i] - pmin)^2)
+    # Equation (4c) / (4d) for generator reactive power
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (pmax - pg[i])^2)
+    JuMP.@constraint(pm.model, sum((Φ(1 - η)  * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (pg[i] - pmin)^2)
 
-    #TODO add for generator reactive power
+
+end
+
+
+function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i)
+
 end

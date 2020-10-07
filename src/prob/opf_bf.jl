@@ -56,8 +56,14 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     _PM.variable_gen_power(pm, bounded=true)
     _PM.variable_branch_power(pm, bounded=false)
     _PM.variable_branch_current(pm)
-    variable_gen_power_response(pm)
     # variable_dcline_power(pm)
+
+    # Set alpha variable for equation (2b)
+    variable_alpha_power_response(pm)
+    # Set alpha summation based on upstream and downstream branches
+    for i in _PM.ids(pm, :branch)
+        constraint_voltage_bounds_cc(pm, i)
+    end
 
     _PM.objective_min_fuel_and_flow_cost(pm)
 
@@ -71,14 +77,14 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
         _PM.constraint_power_balance(pm, i)
     end
 
-    # # Set (2b)
-    # for i in _PM.ids(pm, :branch)
-    #     constraint_balancing_condition(pm, i)
-    # end
-    #
-    # # Set (4c) and (4d)
+    # Set (4c) and (4d)
     for i in _PM.ids(pm, :gen)
         constraint_gen_bounds_cc(pm, i)
+    end
+
+    # Set (4e) and (4f)
+    for i in _PM.ids(pm, :branch)
+        constraint_voltage_bounds_cc(pm, i)
     end
 
 
