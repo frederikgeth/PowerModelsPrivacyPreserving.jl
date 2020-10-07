@@ -47,12 +47,10 @@ function variable_alpha_power_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cn
         pm.model,
         [n in _PM.ids(pm, nw, :bus), l in _PM.ids(pm, nw, :branch)], 
         base_name="$(nw)α",
-        start=0
+        start=0,
+        lower_bound=0,
+        upper_bound=1
     )
-    for (n, bus) in _PM.ref(pm, nw, :bus)
-        JuMP.set_lower_bound.(α[n,:], 0)
-        JuMP.set_upper_bound.(α[n,:], 1)
-    end
 
 end
 
