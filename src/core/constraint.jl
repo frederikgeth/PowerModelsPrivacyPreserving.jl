@@ -124,7 +124,8 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     pg = _PM.var(pm, n, :pg, i)
     qg = _PM.var(pm, n, :qg, i)
     α = _PM.var(pm, n, :α)
-    tanϕ = 0.5 # TODO: Work out how we calculate ϕ - this is hardcoded in Dvorkin as 0.5
+    # Ratio of the reactive to active power
+    tanϕ = qg/pg 
     
     # Helper function to handle the inverse cdf
     Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
