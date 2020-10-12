@@ -60,6 +60,7 @@ end
 ""
 function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     η_g = _PM.ref(pm, nw, :η_g)
+    tanϕ = _PM.ref(pm, nw, :tanϕ)
     gen = _PM.ref(pm, nw, :gen, i)
     bus = gen["gen_bus"]
 
@@ -77,26 +78,57 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
             downstream_sigmas[l] = branch["σ"]
         end
     end 
-    constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], η_g, upstream_sigmas, downstream_sigmas)
+    constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], η_g, tanϕ, upstream_sigmas, downstream_sigmas)
+end
+
+
+"Helper function to retrieve set of downstream nodes"
+function get_downstream_node_ids(pm::_PM.AbstractPowerModel, branch_j; nw::Int=pm.cnw)
+    return [_PM.ref(pm, nw, :branch, branch_downstream_id)["downstream_node"] for branch_downstream_id in branch_j["downstream_branches"]]
 end
 
 
 ""
 function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    # Grab our variables from the model
     η_u = _PM.ref(pm, nw, :η_u)
+    tanϕ = _PM.ref(pm, nw, :tanϕ)
+    α = _PM.var(pm, nw, :α)
     branch_i = _PM.ref(pm, nw, :branch, i)
+    σ = branch_i["σ"]
+    
+    # Grab the vmax and vmin from the next downstream node
+    downstream_node = _PM.ref(pm, nw, :bus, branch_i["downstream_node"])
+    vmax = downstream_node["vmax"]
+    vmin = downstream_node["vmin"]
+    umax = vmax^2
+    umin = vmin^2
 
+    # TODO: work out how to grab u
+    u = 1
+
+    # Helper function to handle the inverse cdf
+    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+
+    summation = []
     for j in branch_i["upstream_branches"]
         branch_j = _PM.ref(pm, nw, :branch, j)
         r = branch_j["br_r"]
         x = branch_j["br_x"]
-
-        for k in branch_j["upstream_branches"]
-            branch_k = _PM.ref(pm, nw, :branch, k)
-
-        end
+        downstream_node_id = branch_j["downstream_node"]
+        # Declare the LHS side of Eq (4e) and (4f)
+        expr =  (
+            r * (sum(α[downstream_node_id, :]) + sum(sum(α[next_downstream, :]) for next_downstream in get_downstream_node_ids(pm, branch_j))) + 
+            j * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[next_downstream, :] * tanϕ) for next_downstream in get_downstream_node_ids(pm, branch_j)))
+        )
+        push!(summation, expr)
 
     end
+
+    # Eq (4e)
+    JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * σ * term).^2 for term in summation) <= 0.5 * (umax - u)^2)
+    # Eq (4f)
+    JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * σ * term).^2 for term in summation) <= 0.5 * (u - umin)^2)
 
     # constraint_voltage_bounds_cc(pm, nw, i, η_u)
 end

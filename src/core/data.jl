@@ -103,10 +103,10 @@ end
 "Helper function to accept a node, and return a list of adjacent branches to iterate through"
 function get_adjacent_branches(data, current_bus, target_branch)
     adjacent_branches = []
-    for (i, branch) in data["branch"]
+    for (l, branch) in data["branch"]
         # Check each branch to see which branches connect to the current node
         # Don't include the target branch
-        if (branch["f_bus"] == current_bus["bus_i"] || branch["t_bus"] == current_bus["bus_i"]) && target_branch["index"] != branch["index"]
+        if (branch["f_bus"] == current_bus["bus_i"] || branch["t_bus"] == current_bus["bus_i"]) && target_branch["index"] != parse(Int, l)
             push!(adjacent_branches, branch)
         end
     end
@@ -207,22 +207,26 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
     target_branch["upstream_nodes"] = upstream_nodes
     target_branch["downstream_nodes"] = downstream_nodes
 
+    # Also set the nearest upstream and downstream node for a branch
+    target_branch["upstream_node"] = upstream_nodes[1]
+    target_branch["downstream_node"] = downstream_nodes[1]
+
     # Iterate through each branch, and check if it's upstream or downstream
     downstream_branches = Vector{Int}()
     upstream_branches = Vector{Int}()
     for (l, branch) in data["branch"]
         # Don't include the current branch in the set
-        if branch["index"] == target_branch["index"]
+        if l == target_branch["index"]
             continue
         end
         # If the branch connects to any downstream node, the branch must be downstream
         if branch["f_bus"] in downstream_nodes || branch["t_bus"] in downstream_nodes
-            push!(downstream_branches, branch["index"])
+            push!(downstream_branches, parse(Int, l))
         end
         # If the branch connects 1 upstream node to another upstream node, the branch is in
         # the path to the root node
         if branch["f_bus"] in upstream_nodes && branch["t_bus"] in upstream_nodes
-            push!(upstream_branches, branch["index"])
+            push!(upstream_branches, parse(Int, l))
         end        
     end
 
@@ -247,9 +251,20 @@ end
 
 
 function set_privacy_parameters!(data, δ, ϵ)
+    # Check each branch to determine if there is a load attached.
+    # If so, set sigma based on the Pd value of this load.
+    load_bus_index = Dict(bus["load_bus"] => l for (l, bus) in data["load"])
     for (i, branch) in data["branch"]
-        # TODO: Set beta to a value based on d_P (what is d_P?)
-        β = 0.1 # Ref: DP_CC_OPF.jl line 44
-        branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+        if branch["downstream_node"] in keys(load_bus_index)
+            β = 0.1 * data["load"][load_bus_index[branch["downstream_node"]]]["pd"] # Ref: DP_CC_OPF.jl line 44
+            branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+        else
+            branch["σ"] = 0
+        end
     end
+end
+
+
+function set_power_factor!(data, tanϕ)
+    data["tanϕ"] = tanϕ
 end

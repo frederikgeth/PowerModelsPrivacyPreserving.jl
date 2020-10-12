@@ -62,7 +62,7 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     variable_alpha_power_response(pm)
     # Set alpha summation based on upstream and downstream branches
     for i in _PM.ids(pm, :branch)
-        constraint_voltage_bounds_cc(pm, i)
+        constraint_alpha_summation(pm, i)
     end
 
     _PM.objective_min_fuel_and_flow_cost(pm)

@@ -24,6 +24,10 @@ set_chance_constraint_etas!(data, η_g, η_u, η_f)
 ϵ = 1
 set_privacy_parameters!(data, δ, ϵ)
 
+# Set the power factor for the problem.
+# Currently, this is constant across the entire network diagram
+set_power_factor!(data, 0.5)
+
 # println(data)
 # quit()
 # result_unpert_cost = PMPP.run_opf_bf_dvorkin(data_unpert, BFAPowerModel, ipopt)
