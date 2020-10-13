@@ -90,11 +90,13 @@ end
 
 ""
 function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    # TODO: Separate into constraint.jl
     # Grab our variables from the model
     η_u = _PM.ref(pm, nw, :η_u)
     tanϕ = _PM.ref(pm, nw, :tanϕ)
     α = _PM.var(pm, nw, :α)
     branch_i = _PM.ref(pm, nw, :branch, i)
+    u = _PM.var(pm, nw, :w, i)
     σ = branch_i["σ"]
     
     # Grab the vmax and vmin from the next downstream node
@@ -103,9 +105,6 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     vmin = downstream_node["vmin"]
     umax = vmax^2
     umin = vmin^2
-
-    # TODO: work out how to grab u
-    u = 1
 
     # Helper function to handle the inverse cdf
     Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
