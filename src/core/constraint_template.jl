@@ -97,7 +97,6 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     α = _PM.var(pm, nw, :α)
     branch_i = _PM.ref(pm, nw, :branch, i)
     u = _PM.var(pm, nw, :w, i)
-    σ = branch_i["σ"]
     
     # Grab the vmax and vmin from the next downstream node
     downstream_node = _PM.ref(pm, nw, :bus, branch_i["downstream_node"])
@@ -117,17 +116,60 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
         downstream_node_id = branch_j["downstream_node"]
         # Declare the LHS side of Eq (4e) and (4f)
         expr =  (
-            r * (sum(α[downstream_node_id, :]) + sum(sum(α[next_downstream, :]) for next_downstream in get_downstream_node_ids(pm, branch_j))) + 
-            j * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[next_downstream, :] * tanϕ) for next_downstream in get_downstream_node_ids(pm, branch_j)))
-        )
+            r * (sum(α[downstream_node_id, :]) + sum(sum(α[k, :]) for k in get_downstream_node_ids(pm, branch_j))) + 
+            j * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[k, :] * tanϕ) for k in get_downstream_node_ids(pm, branch_j)))
+            
+        ) * Φ(1 - η_u) * branch_j["σ"]
         push!(summation, expr)
 
     end
 
     # Eq (4e)
-    JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * σ * term).^2 for term in summation) <= 0.5 * (umax - u)^2)
+    JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (umax - u))^2)
     # Eq (4f)
-    JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * σ * term).^2 for term in summation) <= 0.5 * (u - umin)^2)
+    JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)
 
     # constraint_voltage_bounds_cc(pm, nw, i, η_u)
+end
+
+function get_sigma_from_bus(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    j = 1
+    while true
+        branch_j = _PM.ref(pm, nw, :branch, j)
+        if branch_j["downstream_node"] == i
+            return branch_j["σ"]
+        end
+        j += 1
+    end
+end
+
+
+function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=pm.cnw)
+    # Grab our variables from the model
+    η_f = _PM.ref(pm, nw, :η_f)
+    tanϕ = _PM.ref(pm, nw, :tanϕ)
+    α = _PM.var(pm, nw, :α)
+    branch_l = _PM.ref(pm, nw, :branch, l)
+    σ = branch_l["σ"]
+
+    # Grab the inner polygon coefficients
+    C = _PM.ref(pm, nw, :C)
+    α_f = _PM.ref(pm, nw, :α_f)
+    β_f = _PM.ref(pm, nw, :β_f)
+    δ_f = _PM.ref(pm, nw, :δ_f)
+
+    # Grab the downstream nodes
+    downstream_node_ids = branch_l["downstream_nodes"]
+
+    for c in 1:C
+        # TODO: lhs needs to be an array
+        lhs = 
+        α_f[c] * sum(sum(α[i, :]) * get_sigma_from_bus(pm, i)  for i in downstream_node_ids) + 
+        β_f[c] * tanϕ * sum(sum(α[i, :]) * get_sigma_from_bus(pm, i) for i in downstream_node_ids)
+        # println(lhs)
+        # Eq (4g)
+        # JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * lhs).^2 for term in summation) <= 0.5 * (umax - u)^2)
+    end
+    
+
 end

@@ -268,3 +268,14 @@ end
 function set_power_factor!(data, tanϕ)
     data["tanϕ"] = tanϕ
 end
+
+
+function set_inner_polygon_coefficients!(data)
+    # TODO: Calculate this if necessary
+    # Set cardinality = 12
+    data["C"] = 12
+    # Set each inner polygon approximation
+    data["α_f"] = [1 1 0.2679 -0.2679 -1 -1 -1 -1 -0.2679 0.2679 1 1]
+    data["β_f"] = [0.2679 1 1 1 1 0.2679 -0.2679 -1 -1 -1 -1 -0.2679]
+    data["δ_f"] = [-1 -1.366 -1 -1 -1.366 -1 -1 -1.366 -1 -1 -1.366 -1]
+end
