@@ -117,7 +117,7 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
         # Declare the LHS side of Eq (4e) and (4f)
         expr =  (
             r * (sum(α[downstream_node_id, :]) + sum(sum(α[k, :]) for k in get_downstream_node_ids(pm, branch_j))) + 
-            j * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[k, :] * tanϕ) for k in get_downstream_node_ids(pm, branch_j)))
+            x * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[k, :] * tanϕ) for k in get_downstream_node_ids(pm, branch_j)))
             
         ) * Φ(1 - η_u) * branch_j["σ"]
         push!(summation, expr)
@@ -150,6 +150,9 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     tanϕ = _PM.ref(pm, nw, :tanϕ)
     α = _PM.var(pm, nw, :α)
     branch_l = _PM.ref(pm, nw, :branch, l)
+    p = _PM.var(pm, nw, :p, (l, branch_l["t_bus"], branch_l["f_bus"])) # active power
+    q = _PM.var(pm, nw, :q, (l, branch_l["t_bus"], branch_l["f_bus"])) # reactive power
+    f_max = branch_l["rate_a"]
     σ = branch_l["σ"]
 
     # Grab the inner polygon coefficients
@@ -161,14 +164,22 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     # Grab the downstream nodes
     downstream_node_ids = branch_l["downstream_nodes"]
 
+    # Helper function to handle the inverse cdf
+    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+
     for c in 1:C
         # TODO: lhs needs to be an array
+        L = size(α, 2)
+        tmp = [[α[i, j] for j in 1:L] .* get_sigma_from_bus(pm, i)  for i in downstream_node_ids]
+        
         lhs = 
-        α_f[c] * sum(sum(α[i, :]) * get_sigma_from_bus(pm, i)  for i in downstream_node_ids) + 
-        β_f[c] * tanϕ * sum(sum(α[i, :]) * get_sigma_from_bus(pm, i) for i in downstream_node_ids)
+        α_f[c] * sum(tmp) + 
+        β_f[c] * tanϕ * sum(tmp)
+
+        # println(tmp)
         # println(lhs)
         # Eq (4g)
-        # JuMP.@constraint(pm.model, sum((Φ(1 - η_u) * lhs).^2 for term in summation) <= 0.5 * (umax - u)^2)
+        JuMP.@constraint(pm.model, sum((Φ(1 - η_f) * lhs).^2) <= (-α_f[c] -  β_f[c] - δ_f[c])^2)
     end
     
 
