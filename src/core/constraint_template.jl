@@ -140,10 +140,8 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
         downstream_node_id = branch_j["downstream_node"]
         # Declare the LHS side of Eq (4e) and (4f)
         expr =  (
-            r * (sum(get_signed_alpha(pm, α, downstream_node_id, l) for l in get_downstream_branch_ids(pm, downstream_node_id)) 
-                + sum(get_signed_alpha(pm, α, k, l) for k in get_downstream_node_ids(pm, branch_j) for l in 1:L)) + 
-            x * (sum(get_signed_alpha(pm, α, downstream_node_id, l) * tanϕ for l in get_downstream_branch_ids(pm, downstream_node_id)) 
-                + sum(get_signed_alpha(pm, α, k, l) * tanϕ for k in get_downstream_node_ids(pm, branch_j) for l in 1:L))            
+            r * (sum(get_signed_alpha(pm, α, k, l) for k in get_downstream_node_ids(pm, branch_j) for l in 1:L)) + 
+            x * (sum(get_signed_alpha(pm, α, k, l) * tanϕ for k in get_downstream_node_ids(pm, branch_j) for l in 1:L))            
         ) * Φ(1 - η_u) * branch_j["σ"]
         push!(summation, expr)
 
@@ -197,8 +195,8 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
 
     L = size(α, 2)
     for c in 1:C 
-        println(l, " ", c)
-        tmp = sum([get_signed_alpha(pm, α, i, j) for j in 1:L] .* get_sigma_from_bus(pm, i)  for i in downstream_node_ids)
+        # println(l, " ", c)
+        tmp = sum([get_signed_alpha(pm, α, i, j) for j in 1:L] .* get_sigma_from_bus(pm, i) for i in downstream_node_ids)
         
         lhs = 
             α_f[c] * tmp + 
