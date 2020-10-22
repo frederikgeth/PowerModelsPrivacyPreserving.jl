@@ -53,7 +53,7 @@ end
 
 function constraint_alpha_summation(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
     branch_i = _PM.ref(pm, nw, :branch, i)
-    constraint_alpha_summation(pm, nw, i, branch_i["upstream_nodes"], branch_i["downstream_nodes"])
+    constraint_alpha_summation(pm, i, branch_i["upstream_nodes"], branch_i["downstream_nodes"])
 end
 
 
@@ -87,6 +87,27 @@ function get_downstream_node_ids(pm::_PM.AbstractPowerModel, branch_j; nw::Int=p
     return [_PM.ref(pm, nw, :branch, branch_downstream_id)["downstream_node"] for branch_downstream_id in branch_j["downstream_branches"]]
 end
 
+"Helper function to retrieve set of downstream branches"
+function get_downstream_branch_ids(pm::_PM.AbstractPowerModel, k; nw::Int=pm.cnw)
+    bus_k = _PM.ref(pm, nw, :bus, k)
+    if "downstream_branches" in keys(bus_k) 
+        return bus_k["downstream_branches"]
+    else
+        return []
+    end
+end
+
+function get_signed_alpha(pm, α, k, l; nw::Int=pm.cnw)
+    branch_dict = _PM.ref(pm, nw, :branch, l)
+    if k in branch_dict["upstream_nodes"]
+        return α[k, l]
+    elseif k in branch_dict["downstream_nodes"]
+        return -α[k, l]
+    else
+        return 0
+    end
+end
+
 
 ""
 function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
@@ -108,17 +129,21 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     # Helper function to handle the inverse cdf
     Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
 
+    L = size(α, 2)
+
     summation = []
     for j in branch_i["upstream_branches"]
         branch_j = _PM.ref(pm, nw, :branch, j)
         r = branch_j["br_r"]
         x = branch_j["br_x"]
+
         downstream_node_id = branch_j["downstream_node"]
         # Declare the LHS side of Eq (4e) and (4f)
         expr =  (
-            r * (sum(α[downstream_node_id, :]) + sum(sum(α[k, :]) for k in get_downstream_node_ids(pm, branch_j))) + 
-            x * (sum(α[downstream_node_id, :] * tanϕ) + sum(sum(α[k, :] * tanϕ) for k in get_downstream_node_ids(pm, branch_j)))
-            
+            r * (sum(get_signed_alpha(pm, α, downstream_node_id, l) for l in get_downstream_branch_ids(pm, downstream_node_id)) 
+                + sum(get_signed_alpha(pm, α, k, l) for k in get_downstream_node_ids(pm, branch_j) for l in 1:L)) + 
+            x * (sum(get_signed_alpha(pm, α, downstream_node_id, l) * tanϕ for l in get_downstream_branch_ids(pm, downstream_node_id)) 
+                + sum(get_signed_alpha(pm, α, k, l) * tanϕ for k in get_downstream_node_ids(pm, branch_j) for l in 1:L))            
         ) * Φ(1 - η_u) * branch_j["σ"]
         push!(summation, expr)
 
@@ -130,6 +155,9 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)
 
     # constraint_voltage_bounds_cc(pm, nw, i, η_u)
+    # println(pm.model)
+    # quit()
+    # println()
 end
 
 function get_sigma_from_bus(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
@@ -167,19 +195,19 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     # Helper function to handle the inverse cdf
     Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
 
-    for c in 1:C
-        # TODO: lhs needs to be an array
-        L = size(α, 2)
-        tmp = [[α[i, j] for j in 1:L] .* get_sigma_from_bus(pm, i)  for i in downstream_node_ids]
+    L = size(α, 2)
+    for c in 1:C 
+        println(l, " ", c)
+        tmp = sum([get_signed_alpha(pm, α, i, j) for j in 1:L] .* get_sigma_from_bus(pm, i)  for i in downstream_node_ids)
         
         lhs = 
-        α_f[c] * sum(tmp) + 
-        β_f[c] * tanϕ * sum(tmp)
+            α_f[c] * tmp + 
+            β_f[c] * tanϕ * tmp
 
         # println(tmp)
-        # println(lhs)
+        # println()
         # Eq (4g)
-        JuMP.@constraint(pm.model, sum((Φ(1 - η_f) * lhs).^2) <= (-α_f[c] -  β_f[c] - δ_f[c])^2)
+        JuMP.@constraint(pm.model, sum((Φ(1 - η_f) * lhs).^2) <= (-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max)^2)
     end
     
 

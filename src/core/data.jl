@@ -233,6 +233,17 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
     target_branch["upstream_branches"] = upstream_branches
     target_branch["downstream_branches"] = downstream_branches
 
+    # Set bus properties for convenience
+    # data["bus"][string(upstream_nodes[1])]["downstream_branch"] = target_branch["index"]
+    if "downstream_branches" in keys(data["bus"][string(upstream_nodes[1])])
+        data["bus"][string(upstream_nodes[1])]["downstream_branches"] = 
+            vcat(data["bus"][string(upstream_nodes[1])]["downstream_branches"], vcat(target_branch["index"], downstream_branches))
+    else
+        data["bus"][string(upstream_nodes[1])]["downstream_branches"] = vcat(target_branch["index"], downstream_branches)
+    end
+    # data["bus"][string(downstream_nodes[1])]["upstream_branch"] = target_branch["index"]
+    # data["bus"][string(downstream_nodes[1])]["upstream_branches"] = upstream_branches
+
 end
 
 function create_network_diagram!(data)

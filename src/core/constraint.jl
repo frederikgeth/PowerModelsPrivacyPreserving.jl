@@ -112,7 +112,8 @@ function constraint_fuel_cost_quadratic(pm::_PM.AbstractPowerModel)
 end
 
 "Set equation (2b)"
-function constraint_alpha_summation(pm::_PM.AbstractPowerModel, n::Int, i, upstream_nodes, downstream_nodes)
+function constraint_alpha_summation(pm::_PM.AbstractPowerModel, i, upstream_nodes, downstream_nodes)
+    # EV: CHecked this, appears to be functioning correctly based on validation of model
     α = _PM.var(pm, :α)
     JuMP.@constraint(pm.model, sum(α[j, i] for j in upstream_nodes) == 1)
     JuMP.@constraint(pm.model, sum(α[j, i] for j in downstream_nodes) == 1)
@@ -139,11 +140,16 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qmax - qg)^2)
     JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qg - qmin)^2)
 
+    # println(pm.model)
+    # println("i is, ", i)
+    # println("connected_branches_sigmas is, ", connected_branches_sigmas)
+    # quit()
+
 
 end
 
 
-function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i)
+function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i)
     
 
 end

@@ -78,10 +78,10 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
         _PM.constraint_power_balance(pm, i)
     end
 
-    # Set (4c) and (4d)
-    for i in _PM.ids(pm, :gen)
-        constraint_gen_bounds_cc(pm, i)
-    end
+    # # Set (4c) and (4d)
+    # for i in _PM.ids(pm, :gen)
+    #     constraint_gen_bounds_cc(pm, i)
+    # end
 
     # Set (4e) and (4f)
     for i in _PM.ids(pm, :branch)
