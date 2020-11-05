@@ -127,7 +127,8 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     α = _PM.var(pm, :α)
     
     # Helper function to handle the inverse cdf
-    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     # Set the downstream branches to be negative and merge our dictionaries
     connected_branches_sigmas = merge(upstream_sigmas, Dict(l => -σ for (l, σ) in downstream_sigmas))

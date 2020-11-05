@@ -268,7 +268,9 @@ function set_privacy_parameters!(data, δ, ϵ)
     for (i, branch) in data["branch"]
         if branch["downstream_node"] in keys(load_bus_index)
             β = 0.1 * data["load"][load_bus_index[branch["downstream_node"]]]["pd"] # Ref: DP_CC_OPF.jl line 44
-            branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+            # branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+            b = β / ϵ
+            branch["σ"] = sqrt(2) * b
         else
             branch["σ"] = 0
         end

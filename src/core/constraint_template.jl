@@ -127,7 +127,8 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     umin = vmin^2
 
     # Helper function to handle the inverse cdf
-    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     L = size(α, 2)
 
@@ -191,7 +192,8 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     downstream_node_ids = branch_l["downstream_nodes"]
 
     # Helper function to handle the inverse cdf
-    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     L = size(α, 2)
     for c in 1:C 
