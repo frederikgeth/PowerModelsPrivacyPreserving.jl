@@ -149,14 +149,14 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     end
 
     # Eq (4e)
-    JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (umax - u))^2)
+    # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (umax - u))^2)
+    u_max_arr = vcat(0.5 * (umax - u), summation)
+    JuMP.@constraint(pm.model, u_max_arr in JuMP.SecondOrderCone())
     # Eq (4f)
-    JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)
+    # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)
 
-    # constraint_voltage_bounds_cc(pm, nw, i, η_u)
-    # println(pm.model)
-    # quit()
-    # println()
+    u_min_arr = vcat(0.5 * (u - umin), summation)
+    JuMP.@constraint(pm.model, u_min_arr in JuMP.SecondOrderCone())
 end
 
 function get_sigma_from_bus(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
@@ -197,17 +197,16 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
 
     L = size(α, 2)
     for c in 1:C 
-        # println(l, " ", c)
-        tmp = sum([get_signed_alpha(pm, α, i, j) for j in 1:L] .* get_sigma_from_bus(pm, i) for i in downstream_node_ids)
-        
-        lhs = 
-            α_f[c] * tmp + 
-            β_f[c] * tanϕ * tmp
+        tmp = [sum(get_signed_alpha(pm, α, i, j) for j in 1:L) * get_sigma_from_bus(pm, i) for i in downstream_node_ids]
 
-        # println(tmp)
-        # println()
+        lhs = 
+            (α_f[c] * tmp + 
+            β_f[c] * tanϕ * tmp) * Φ(1 - η_f)
+
         # Eq (4g)
-        JuMP.@constraint(pm.model, sum((Φ(1 - η_f) * lhs).^2) <= (-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max)^2)
+        # JuMP.@constraint(pm.model, sum((lhs).^2) <= (-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max)^2)
+        expr = vcat(-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max, lhs)
+        JuMP.@constraint(pm.model, expr in JuMP.SecondOrderCone())
     end
     
 

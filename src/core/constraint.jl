@@ -133,18 +133,28 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     # Set the downstream branches to be negative and merge our dictionaries
     connected_branches_sigmas = merge(upstream_sigmas, Dict(l => -σ for (l, σ) in downstream_sigmas))
 
-    # Equation (4c) / (4d) for generator active power
-    JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pmax - pg)^2)
-    JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pg - pmin)^2)
+    # # Equation (4c) / (4d) for generator active power
+    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pmax - pg)^2)
+    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pg - pmin)^2)
 
-    # Equation (4c) / (4d) for generator reactive power
-    JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qmax - qg)^2)
-    JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qg - qmin)^2)
+    # # Equation (4c) / (4d) for generator reactive power
+    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qmax - qg)^2)
+    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qg - qmin)^2)
 
-    # println(pm.model)
-    # println("i is, ", i)
-    # println("connected_branches_sigmas is, ", connected_branches_sigmas)
-    # quit()
+    arg_p = []
+    arg_q = []
+    for (l, σ) in connected_branches_sigmas
+        arg_p = push!(arg_p, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l]))
+        arg_q = push!(arg_q, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l] * tanϕ))
+    end
+    g_p_max_soc = vcat(pmax - pg, arg_p)
+    g_q_max_soc = vcat(qmax - qg, arg_q)
+    g_p_min_soc = vcat(pg - pmin, arg_p)
+    g_q_min_soc = vcat(qg - qmin, arg_q)
+    JuMP.@constraint(pm.model, g_p_max_soc in JuMP.SecondOrderCone())
+    JuMP.@constraint(pm.model, g_q_max_soc in JuMP.SecondOrderCone())
+    JuMP.@constraint(pm.model, g_p_min_soc in JuMP.SecondOrderCone())
+    JuMP.@constraint(pm.model, g_q_min_soc in JuMP.SecondOrderCone())
 
 
 end

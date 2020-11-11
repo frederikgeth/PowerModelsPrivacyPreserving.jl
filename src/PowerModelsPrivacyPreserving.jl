@@ -20,6 +20,7 @@ include("core/variable.jl")
 include("core/constraint.jl")
 include("core/constraint_template.jl")
 include("core/objective.jl")
+include("core/types.jl")
 
 include("prob/opf.jl")
 include("prob/opf_bf.jl")
