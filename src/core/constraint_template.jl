@@ -117,10 +117,10 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     tanϕ = _PM.ref(pm, nw, :tanϕ)
     α = _PM.var(pm, nw, :α)
     branch_i = _PM.ref(pm, nw, :branch, i)
-    u = _PM.var(pm, nw, :w, i)
     
-    # Grab the vmax and vmin from the next downstream node
+    # Grab the voltage information from the next downstream node
     downstream_node = _PM.ref(pm, nw, :bus, branch_i["downstream_node"])
+    u = _PM.var(pm, nw, :w, downstream_node["index"])
     vmax = downstream_node["vmax"]
     vmin = downstream_node["vmin"]
     umax = vmax^2
@@ -135,22 +135,32 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     summation = []
     for j in branch_i["upstream_branches"]
         branch_j = _PM.ref(pm, nw, :branch, j)
+        if branch_j["σ"] == 0
+            continue
+        end
         r = branch_j["br_r"]
         x = branch_j["br_x"]
 
-        downstream_node_id = branch_j["downstream_node"]
         # Declare the LHS side of Eq (4e) and (4f)
         expr =  (
             r * (sum(get_signed_alpha(pm, α, k, l) for k in get_downstream_node_ids(pm, branch_j) for l in 1:L)) + 
             x * (sum(get_signed_alpha(pm, α, k, l) * tanϕ for k in get_downstream_node_ids(pm, branch_j) for l in 1:L))            
         ) * Φ(1 - η_u) * branch_j["σ"]
+        # println(expr)
+        # println()
         push!(summation, expr)
 
     end
-
+    # quit()
     # Eq (4e)
     # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (umax - u))^2)
+    # This is what's killing us, just the umax - u term
+    # if size(summation, 1) == 0
+    #     return
+    # end
     u_max_arr = vcat(0.5 * (umax - u), summation)
+    println(u_max_arr)
+    println()
     JuMP.@constraint(pm.model, u_max_arr in JuMP.SecondOrderCone())
     # Eq (4f)
     # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)

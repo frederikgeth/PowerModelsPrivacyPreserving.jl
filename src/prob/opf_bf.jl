@@ -54,7 +54,7 @@ end
 function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     # TODO: Need to remove any unnecessary constraints here
     _PM.variable_bus_voltage(pm, bounded=false)
-    _PM.variable_gen_power(pm, bounded=true)
+    _PM.variable_gen_power(pm, bounded=false)
     _PM.variable_branch_power(pm, bounded=false)
     _PM.variable_branch_current(pm)
     # variable_dcline_power(pm)
@@ -85,6 +85,7 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
 
     # Set (4e) and (4f)
     for i in _PM.ids(pm, :branch)
+        # This one is the problem
         constraint_voltage_bounds_cc(pm, i)
     end
 
@@ -108,4 +109,6 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     # for i in ids(pm, :dcline)
     #     constraint_dcline_power_losses(pm, i)
     # end
+    # print(pm.model)
+    # quit()
 end
