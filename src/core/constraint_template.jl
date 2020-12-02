@@ -71,6 +71,7 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
     # or downstream relative to this node. Store the value of sigma for each of these 
     # connected branches.
     for (l, branch) in _PM.ref(pm, nw, :branch)
+        # println(branch)
         if bus ∈ branch["upstream_nodes"]
             upstream_sigmas[l] = branch["σ"] 
         end
@@ -78,6 +79,10 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
             downstream_sigmas[l] = branch["σ"]
         end
     end 
+    # println("upstream_sigmas is")
+    # println(upstream_sigmas)
+    # println("downstream_sigmas is")
+    # println(downstream_sigmas)
     constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], η_g, tanϕ, upstream_sigmas, downstream_sigmas)
 end
 
@@ -133,6 +138,10 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     L = size(α, 2)
 
     summation = []
+    # println("branch is:")
+    # println(i)
+    # println("upstream branches are:")
+    # println(branch_i["upstream_branches"])
     for j in branch_i["upstream_branches"]
         branch_j = _PM.ref(pm, nw, :branch, j)
         if branch_j["σ"] == 0
@@ -159,8 +168,8 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     #     return
     # end
     u_max_arr = vcat(0.5 * (umax - u), summation)
-    println(u_max_arr)
-    println()
+    # println(u_max_arr)
+    # println()
     JuMP.@constraint(pm.model, u_max_arr in JuMP.SecondOrderCone())
     # Eq (4f)
     # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)

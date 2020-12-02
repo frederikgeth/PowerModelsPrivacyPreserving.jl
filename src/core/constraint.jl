@@ -144,6 +144,7 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     arg_p = []
     arg_q = []
     for (l, σ) in connected_branches_sigmas
+        # println(l, σ)
         arg_p = push!(arg_p, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l]))
         arg_q = push!(arg_q, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l] * tanϕ))
     end

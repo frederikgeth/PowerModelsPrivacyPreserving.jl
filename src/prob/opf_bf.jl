@@ -52,7 +52,6 @@ end
 
 ""
 function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
-    # TODO: Need to remove any unnecessary constraints here
     _PM.variable_bus_voltage(pm, bounded=false)
     _PM.variable_gen_power(pm, bounded=false)
     _PM.variable_branch_power(pm, bounded=false)
@@ -67,6 +66,7 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     end
 
     _PM.objective_min_fuel_and_flow_cost(pm)
+    # _PM.objective_min_fuel_cost(pm)
 
     _PM.constraint_model_current(pm)
 
@@ -82,17 +82,23 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     for i in _PM.ids(pm, :gen)
         constraint_gen_bounds_cc(pm, i)
     end
+    # println(pm.model)
+    # quit()
 
     # Set (4e) and (4f)
     for i in _PM.ids(pm, :branch)
         # This one is the problem
         constraint_voltage_bounds_cc(pm, i)
     end
+    # println(pm.model)
+    # quit()
 
     # Set (4g)
     for i in _PM.ids(pm, :branch)
         constraint_flow_limits_cc(pm, i)
     end
+    # println(pm.model)
+    # quit()
 
 
     for i in _PM.ids(pm, :branch)

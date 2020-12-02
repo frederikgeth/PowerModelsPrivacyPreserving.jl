@@ -214,11 +214,12 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
     # Iterate through each branch, and check if it's upstream or downstream
     downstream_branches = Vector{Int}()
     upstream_branches = Vector{Int}()
+    push!(upstream_branches, target_branch["index"])
     for (l, branch) in data["branch"]
-        # Don't include the current branch in the set
-        if l == target_branch["index"]
-            continue
-        end
+        # # Don't include the current branch in the set
+        # if l == target_branch["index"]
+        #     continue
+        # end
         # If the branch connects to any downstream node, the branch must be downstream
         if branch["f_bus"] in downstream_nodes || branch["t_bus"] in downstream_nodes
             push!(downstream_branches, parse(Int, l))
@@ -268,11 +269,17 @@ function set_privacy_parameters!(data, δ, ϵ)
     for (i, branch) in data["branch"]
         if branch["downstream_node"] in keys(load_bus_index)
             β = 0.1 * data["load"][load_bus_index[branch["downstream_node"]]]["pd"] # Ref: DP_CC_OPF.jl line 44
+            # println("β is:")
+            # println(β)
             # branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
             b = β / ϵ
             branch["σ"] = sqrt(2) * b
+            # println("setting sigma for")
+            # println(branch)
         else
             branch["σ"] = 0
+            # println("NOT setting sigma for")
+            # println(branch)
         end
     end
 end
