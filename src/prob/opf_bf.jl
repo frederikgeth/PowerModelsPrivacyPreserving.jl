@@ -31,10 +31,10 @@ function build_opf_bf_dvorkin(pm::_PM.AbstractPowerModel)
         _PM.constraint_power_losses(pm, i)
         _PM.constraint_voltage_magnitude_difference(pm, i)
 
-        _PM.constraint_voltage_angle_difference(pm, i)
+        # _PM.constraint_voltage_angle_difference(pm, i)
 
-        _PM.constraint_thermal_limit_from(pm, i)
-        _PM.constraint_thermal_limit_to(pm, i)
+        # _PM.constraint_thermal_limit_from(pm, i)
+        # _PM.constraint_thermal_limit_to(pm, i)
     end
 
     # We aren't using dcline for our problem so commented out
@@ -82,23 +82,16 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     for i in _PM.ids(pm, :gen)
         constraint_gen_bounds_cc(pm, i)
     end
-    # println(pm.model)
-    # quit()
 
     # Set (4e) and (4f)
     for i in _PM.ids(pm, :branch)
-        # This one is the problem
         constraint_voltage_bounds_cc(pm, i)
     end
-    # println(pm.model)
-    # quit()
 
     # Set (4g)
     for i in _PM.ids(pm, :branch)
         constraint_flow_limits_cc(pm, i)
     end
-    # println(pm.model)
-    # quit()
 
 
     for i in _PM.ids(pm, :branch)
@@ -115,6 +108,6 @@ function build_opf_bf_dvorkin_cc(pm::_PM.AbstractPowerModel)
     # for i in ids(pm, :dcline)
     #     constraint_dcline_power_losses(pm, i)
     # end
-    # print(pm.model)
-    # quit()
+
+    print(pm.model)
 end

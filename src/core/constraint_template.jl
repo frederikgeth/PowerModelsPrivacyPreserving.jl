@@ -79,10 +79,6 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm
             downstream_sigmas[l] = branch["σ"]
         end
     end 
-    # println("upstream_sigmas is")
-    # println(upstream_sigmas)
-    # println("downstream_sigmas is")
-    # println(downstream_sigmas)
     constraint_gen_bounds_cc(pm, nw, i, gen["pmin"], gen["pmax"], gen["qmin"], gen["qmax"], η_g, tanϕ, upstream_sigmas, downstream_sigmas)
 end
 
@@ -92,15 +88,6 @@ function get_downstream_node_ids(pm::_PM.AbstractPowerModel, branch_j; nw::Int=p
     return [_PM.ref(pm, nw, :branch, branch_downstream_id)["downstream_node"] for branch_downstream_id in branch_j["downstream_branches"]]
 end
 
-"Helper function to retrieve set of downstream branches"
-function get_downstream_branch_ids(pm::_PM.AbstractPowerModel, k; nw::Int=pm.cnw)
-    bus_k = _PM.ref(pm, nw, :bus, k)
-    if "downstream_branches" in keys(bus_k) 
-        return bus_k["downstream_branches"]
-    else
-        return []
-    end
-end
 
 function get_signed_alpha(pm, α, k, l; nw::Int=pm.cnw)
     branch_dict = _PM.ref(pm, nw, :branch, l)
@@ -132,61 +119,40 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     umin = vmin^2
 
     # Helper function to handle the inverse cdf
-    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
-    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
+    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     L = size(α, 2)
 
-    summation = []
-    # println("branch is:")
-    # println(i)
-    # println("upstream branches are:")
-    # println(branch_i["upstream_branches"])
-    for j in branch_i["upstream_branches"]
-        branch_j = _PM.ref(pm, nw, :branch, j)
-        if branch_j["σ"] == 0
+    lhs_vector = []
+    for l in 1:L
+        lhs_summation = 0
+        # Don't calculate for any branch with no sigma value
+        σ = _PM.ref(pm, nw, :branch, l)["σ"]
+        if σ == 0
             continue
         end
-        r = branch_j["br_r"]
-        x = branch_j["br_x"]
+        for j in branch_i["upstream_branches"]
+            branch_j = _PM.ref(pm, nw, :branch, j)
+            r = branch_j["br_r"]
+            x = branch_j["br_x"]
 
-        # Declare the LHS side of Eq (4e) and (4f)
-        expr =  (
-            r * (sum(get_signed_alpha(pm, α, k, l) for k in get_downstream_node_ids(pm, branch_j) for l in 1:L)) + 
-            x * (sum(get_signed_alpha(pm, α, k, l) * tanϕ for k in get_downstream_node_ids(pm, branch_j) for l in 1:L))            
-        ) * Φ(1 - η_u) * branch_j["σ"]
-        # println(expr)
-        # println()
-        push!(summation, expr)
-
-    end
-    # quit()
-    # Eq (4e)
-    # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (umax - u))^2)
-    # This is what's killing us, just the umax - u term
-    # if size(summation, 1) == 0
-    #     return
-    # end
-    u_max_arr = vcat(0.5 * (umax - u), summation)
-    # println(u_max_arr)
-    # println()
-    JuMP.@constraint(pm.model, u_max_arr in JuMP.SecondOrderCone())
-    # Eq (4f)
-    # JuMP.@constraint(pm.model, sum(term.^2 for term in summation) <= (0.5 * (u - umin))^2)
-
-    u_min_arr = vcat(0.5 * (u - umin), summation)
-    JuMP.@constraint(pm.model, u_min_arr in JuMP.SecondOrderCone())
-end
-
-function get_sigma_from_bus(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
-    j = 1
-    while true
-        branch_j = _PM.ref(pm, nw, :branch, j)
-        if branch_j["downstream_node"] == i
-            return branch_j["σ"]
+            # Declare the LHS side of Eq (4e) and (4f)
+            lhs_summation +=  (
+                r * (sum(get_signed_alpha(pm, α, k, l) for k in branch_j["downstream_nodes"])) +
+                x * tanϕ * (sum(get_signed_alpha(pm, α, k, l) for k in branch_j["downstream_nodes"]))          
+            ) * Φ(1 - η_u) * σ
         end
-        j += 1
+        push!(lhs_vector, lhs_summation)
+
     end
+    # Eq (4e)
+    u_max_arr = vcat(0.5 * (umax - u), lhs_vector)
+    JuMP.@constraint(pm.model, u_max_arr in JuMP.SecondOrderCone())
+    
+    # Eq (4f)
+    u_min_arr = vcat(0.5 * (u - umin), lhs_vector)
+    JuMP.@constraint(pm.model, u_min_arr in JuMP.SecondOrderCone())
 end
 
 
@@ -207,26 +173,29 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     β_f = _PM.ref(pm, nw, :β_f)
     δ_f = _PM.ref(pm, nw, :δ_f)
 
-    # Grab the downstream nodes
+    # Grab the relevant nodes
     downstream_node_ids = branch_l["downstream_nodes"]
 
     # Helper function to handle the inverse cdf
-    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
-    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
+    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     L = size(α, 2)
     for c in 1:C 
-        tmp = [sum(get_signed_alpha(pm, α, i, j) for j in 1:L) * get_sigma_from_bus(pm, i) for i in downstream_node_ids]
-
-        lhs = 
-            (α_f[c] * tmp + 
-            β_f[c] * tanϕ * tmp) * Φ(1 - η_f)
+        lhs_vector = []
+        for j in 1:L
+            # Don't calculate for any branch with no sigma value
+            σ = _PM.ref(pm, nw, :branch, j)["σ"]
+            if σ == 0
+                continue
+            end
+            tmp = sum(get_signed_alpha(pm, α, n, j) for n in downstream_node_ids)
+            lhs = (α_f[c] * tmp + β_f[c] * tanϕ * tmp) * Φ(1 - η_f) * σ
+            push!(lhs_vector, lhs)
+        end
 
         # Eq (4g)
-        # JuMP.@constraint(pm.model, sum((lhs).^2) <= (-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max)^2)
-        expr = vcat(-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max, lhs)
+        expr = vcat(-α_f[c] * p -  β_f[c] * q - δ_f[c] * f_max, lhs_vector)
         JuMP.@constraint(pm.model, expr in JuMP.SecondOrderCone())
     end
-    
-
 end

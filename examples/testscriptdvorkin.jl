@@ -8,8 +8,8 @@ using ECOS
 const PM = PowerModels
 const PMPP = PowerModelsPrivacyPreserving
 
-# ipopt = Ipopt.Optimizer
-file =  "test/data/matpower/nesta_case9_l_kds__rad.m"
+ipopt = Ipopt.Optimizer
+file =  "test/data/matpower/test_3_bus.m"
 data = PM.parse_file(file)
 
 
@@ -21,7 +21,7 @@ create_network_diagram!(data)
 set_chance_constraint_etas!(data, η_g, η_u, η_f)
 
 # Set privacy parameters Ref: DP_CC_OPF.jl line 40
-δ = 1 / (length(data["branch"]) - 1)
+δ = 1 / (length(data["bus"]) - 1)
 ϵ = 1000
 set_privacy_parameters!(data, δ, ϵ)
 
@@ -33,9 +33,7 @@ set_power_factor!(data, 0.5)
 # TODO: Generate these based on specified cardinality
 set_inner_polygon_coefficients!(data)
 
-# println(data)
-# quit()
-# result_unpert_cost = PMPP.run_opf_bf_dvorkin(data_unpert, BFAPowerModel, ipopt)
+# result_unpert_cost = PMPP.run_opf_bf_dvorkin(data, BFAPowerModel, ipopt)
 
 ##
 # https://github.com/mlubin/RobustCCOPFSupplement/

@@ -175,20 +175,14 @@ end
 ""
 function set_upstream_downstream_nodes_branches!(data, target_branch)
     # For the given branch, explore all buses to the f side of it
-    # println("Looking for f nodes for branch ", target_branch["index"])
     f_direction_buses = Vector{Int}()
     closest_f_bus = data["bus"][string(target_branch["f_bus"])]
     recursive_connected_nodes(data, target_branch, closest_f_bus, f_direction_buses)
-    # println(f_direction_buses)
-    # println()
 
     # For the given branch, explore all buses to the t side of it
-    # println("Looking for t nodes for branch ", target_branch["index"])
     t_direction_buses = Vector{Int}()
     closest_t_bus = data["bus"][string(target_branch["t_bus"])]
     recursive_connected_nodes(data, target_branch, closest_t_bus, t_direction_buses)
-    # println(t_direction_buses)
-    # println()
 
     # Find the root node
     root_bus_id = get_root_bus(data)
@@ -213,13 +207,10 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
 
     # Iterate through each branch, and check if it's upstream or downstream
     downstream_branches = Vector{Int}()
+    # push!(downstream_branches, target_branch["index"])
     upstream_branches = Vector{Int}()
     push!(upstream_branches, target_branch["index"])
     for (l, branch) in data["branch"]
-        # # Don't include the current branch in the set
-        # if l == target_branch["index"]
-        #     continue
-        # end
         # If the branch connects to any downstream node, the branch must be downstream
         if branch["f_bus"] in downstream_nodes || branch["t_bus"] in downstream_nodes
             push!(downstream_branches, parse(Int, l))
@@ -235,24 +226,21 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
     target_branch["downstream_branches"] = downstream_branches
 
     # Set bus properties for convenience
-    # data["bus"][string(upstream_nodes[1])]["downstream_branch"] = target_branch["index"]
     if "downstream_branches" in keys(data["bus"][string(upstream_nodes[1])])
         data["bus"][string(upstream_nodes[1])]["downstream_branches"] = 
             vcat(data["bus"][string(upstream_nodes[1])]["downstream_branches"], vcat(target_branch["index"], downstream_branches))
     else
         data["bus"][string(upstream_nodes[1])]["downstream_branches"] = vcat(target_branch["index"], downstream_branches)
     end
-    # data["bus"][string(downstream_nodes[1])]["upstream_branch"] = target_branch["index"]
-    # data["bus"][string(downstream_nodes[1])]["upstream_branches"] = upstream_branches
 
 end
+
 
 function create_network_diagram!(data)
     # For each branch, build a mapping of upstream and downstream nodes
     for (i, branch) in data["branch"]
         set_upstream_downstream_nodes_branches!(data, branch)
     end
-
 end
 
 function set_chance_constraint_etas!(data, η_g, η_u, η_f)
@@ -269,17 +257,14 @@ function set_privacy_parameters!(data, δ, ϵ)
     for (i, branch) in data["branch"]
         if branch["downstream_node"] in keys(load_bus_index)
             β = 0.1 * data["load"][load_bus_index[branch["downstream_node"]]]["pd"] # Ref: DP_CC_OPF.jl line 44
-            # println("β is:")
-            # println(β)
-            # branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
-            b = β / ϵ
-            branch["σ"] = sqrt(2) * b
-            # println("setting sigma for")
-            # println(branch)
+            branch["σ"] = β * sqrt(2 * log(1.25 / δ)) / ϵ # Ref: DP_CC_OPF.jl line 45
+
+            # Laplace Noise
+            # b = β / ϵ
+            # branch["σ"] = sqrt(2) * b
+
         else
             branch["σ"] = 0
-            # println("NOT setting sigma for")
-            # println(branch)
         end
     end
 end

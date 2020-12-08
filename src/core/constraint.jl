@@ -127,33 +127,28 @@ function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i, pmin, p
     α = _PM.var(pm, :α)
     
     # Helper function to handle the inverse cdf
-    # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
-    Φ(x) = -sqrt(2)/2 * log(2*(1-x))
+    Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
+    # Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
     # Set the downstream branches to be negative and merge our dictionaries
     connected_branches_sigmas = merge(upstream_sigmas, Dict(l => -σ for (l, σ) in downstream_sigmas))
 
-    # # Equation (4c) / (4d) for generator active power
-    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pmax - pg)^2)
-    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l]).^2 for (l, σ) in connected_branches_sigmas) <= (pg - pmin)^2)
-
-    # # Equation (4c) / (4d) for generator reactive power
-    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qmax - qg)^2)
-    # JuMP.@constraint(pm.model, sum((Φ(1 - η) * σ * α[i, l] * tanϕ).^2 for (l, σ) in connected_branches_sigmas) <= (qg - qmin)^2)
-
     arg_p = []
     arg_q = []
     for (l, σ) in connected_branches_sigmas
-        # println(l, σ)
         arg_p = push!(arg_p, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l]))
         arg_q = push!(arg_q, JuMP.@expression(pm.model, Φ(1 - η) * σ * α[i, l] * tanϕ))
     end
+
+    # Equation (4c) / (4d) for generator active power
     g_p_max_soc = vcat(pmax - pg, arg_p)
     g_q_max_soc = vcat(qmax - qg, arg_q)
-    g_p_min_soc = vcat(pg - pmin, arg_p)
-    g_q_min_soc = vcat(qg - qmin, arg_q)
     JuMP.@constraint(pm.model, g_p_max_soc in JuMP.SecondOrderCone())
     JuMP.@constraint(pm.model, g_q_max_soc in JuMP.SecondOrderCone())
+
+    # Equation (4c) / (4d) for generator reactive power
+    g_p_min_soc = vcat(pg - pmin, arg_p)
+    g_q_min_soc = vcat(qg - qmin, arg_q)
     JuMP.@constraint(pm.model, g_p_min_soc in JuMP.SecondOrderCone())
     JuMP.@constraint(pm.model, g_q_min_soc in JuMP.SecondOrderCone())
 
