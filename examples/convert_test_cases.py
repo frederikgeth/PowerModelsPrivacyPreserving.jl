@@ -24,8 +24,11 @@ z_base = voltage_base / power_base
 buses = obj['bus']
 loads = obj['load']
 lines = obj['line']
-voltage_source = obj['voltage_source']['source']
 linecodes = obj['linecode']
+
+# Extract special features for transformations
+voltage_source = obj['voltage_source']['source']
+transformer = obj['transformer']['tr1']
 
 # Lines
 transformed_lines = {}
@@ -90,6 +93,7 @@ for bus_id, bus_json in buses.items():
         bus_id = '0'
     transformed_bus['bus_type'] = 1
 
+    transformed_bus['bus_i'] = int(bus_id)
     transformed_bus['index'] = int(bus_id)
 
     # Set voltage parameters to constants
@@ -120,6 +124,40 @@ ref_gen['gen_bus'] = 0
 ref_gen['index'] = 1
 
 gens = {'1': ref_gen}
+
+# Manually add branch from voltage source 'sourcebus' to the first bus using property of connected transformer
+root_branch = {}
+root_branch['index'] = int(0)
+
+# Set to and from nodes
+root_branch['f_bus'] = int(0)
+root_branch['t_bus'] = int(transformer['bus'][1])
+
+# Set b and g
+root_branch['b_to'] = 0
+root_branch['g_to'] = 0
+root_branch['b_fr'] = 0
+root_branch['g_fr'] = 0
+
+# Get br_r and br_x values using linecode dictionary
+root_branch['br_r'] = voltage_source['rs']['value'] / z_base
+root_branch['br_x'] = voltage_source['xs']['value'] / z_base
+
+# Set rate_a to a large number as we can't use inf in json
+root_branch['rate_a'] = large_number
+
+# Set angmin and angmax to default value pi / 6
+root_branch['angmin'] = math.pi / 6
+root_branch['angmax'] = math.pi / 6
+
+# Set unused params to default
+root_branch['transformer'] = False
+root_branch['tap'] = 1
+root_branch['shift'] = 0
+root_branch['br_status'] = 1
+
+# Powermodels wants numerical line_ids
+transformed_lines["0"] = root_branch
 
 
 

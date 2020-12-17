@@ -5,6 +5,7 @@ import InfrastructureModels
 import JuMP
 import Random
 import Distributions
+import JSON
 
 const _PM = PowerModels 
 const _PMD = PowerModelsDistribution 

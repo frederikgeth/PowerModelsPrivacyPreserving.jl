@@ -122,10 +122,11 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::In
     # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
     Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
-    L = size(α, 2)
+    # L = size(α, 2)
+    network_branches = [key for (key, value) in _PM.ref(pm, nw, :branch)]
 
     lhs_vector = []
-    for l in 1:L
+    for l in network_branches
         lhs_summation = 0
         # Don't calculate for any branch with no sigma value
         σ = _PM.ref(pm, nw, :branch, l)["σ"]
@@ -185,10 +186,12 @@ function constraint_flow_limits_cc(pm::_PM.AbstractPowerModel, l::Int; nw::Int=p
     # Φ(x) = Distributions.quantile(Distributions.Normal(0, 1), x)
     Φ(x) = -sqrt(2)/2 * log(2*(1-x))
 
-    L = size(α, 2)
+    # L = size(α, 2)
+
+    network_branches = [key for (key, value) in _PM.ref(pm, nw, :branch)]
     for c in 1:C 
         lhs_vector = []
-        for j in 1:L
+        for j in network_branches
             # Don't calculate for any branch with no sigma value
             σ = _PM.ref(pm, nw, :branch, j)["σ"]
             if σ == 0
