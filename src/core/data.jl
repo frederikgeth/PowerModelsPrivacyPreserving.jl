@@ -172,7 +172,8 @@ function dfs_to_root(data, target_branch, current_bus, dfs_stack, root_bus_id)
 
 end
 
-""
+"For each branch in the network, calculate the graph parameters required to solve
+a dvorkin OPF problem"
 function set_upstream_downstream_nodes_branches!(data, target_branch)
     # For the given branch, explore all buses to the f side of it
     f_direction_buses = Vector{Int}()
@@ -236,13 +237,16 @@ function set_upstream_downstream_nodes_branches!(data, target_branch)
 end
 
 
+"Entry point to accept a Powermodels data dictionary and calculate the graph 
+parameters required to solve a dvorkin OPF problem"
 function create_network_diagram!(data)
-    # For each branch, build a mapping of upstream and downstream nodes
     for (i, branch) in data["branch"]
         set_upstream_downstream_nodes_branches!(data, branch)
     end
 end
 
+
+"Set the required chance constraint violation probabiltiies"
 function set_chance_constraint_etas!(data, η_g, η_u, η_f)
     data["η_g"] = η_g
     data["η_u"] = η_u
@@ -250,6 +254,7 @@ function set_chance_constraint_etas!(data, η_g, η_u, η_f)
 end
 
 
+"Set the σ value for each branch"
 function set_privacy_parameters!(data, δ, ϵ)
     # Check each branch to determine if there is a load attached.
     # If so, set sigma based on the Pd value of this load.
@@ -270,11 +275,13 @@ function set_privacy_parameters!(data, δ, ϵ)
 end
 
 
+"Set the power factor for the OPF problem"
 function set_power_factor!(data, tanϕ)
     data["tanϕ"] = tanϕ
 end
 
 
+"Set the inner polygon coefficients"
 function set_inner_polygon_coefficients!(data)
     # TODO: Calculate this if necessary
     # Set cardinality = 12
