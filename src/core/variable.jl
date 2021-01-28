@@ -46,7 +46,7 @@ function variable_alpha_power_response(pm::_PM.AbstractPowerModel; nw::Int=pm.cn
     α = _PM.var(pm, nw)[:α] = JuMP.@variable(
         pm.model,
         [n in _PM.ids(pm, nw, :bus), l in _PM.ids(pm, nw, :branch)], 
-        base_name="$(nw)α",
+        base_name="α",
         start=0,
         lower_bound=0,
         upper_bound=1

@@ -160,3 +160,7 @@ function constraint_voltage_bounds_cc(pm::_PM.AbstractPowerModel, n::Int, i)
     
 
 end
+
+function constraint_gen_bounds_cc(pm::_PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+
+end
