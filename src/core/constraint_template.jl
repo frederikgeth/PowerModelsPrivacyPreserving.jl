@@ -89,8 +89,8 @@ function get_downstream_node_ids(pm::_PM.AbstractPowerModel, branch_j; nw::Int=p
 end
 
 
-function get_signed_alpha(pm, α, k, l; nw::Int=pm.cnw)
-    branch_dict = _PM.ref(pm, nw, :branch, l)
+function get_signed_alpha(pm, α, k, l)
+    branch_dict = _PM.ref(pm, :branch, l)
     if k in branch_dict["upstream_nodes"]
         return α[k, l]
     elseif k in branch_dict["downstream_nodes"]
