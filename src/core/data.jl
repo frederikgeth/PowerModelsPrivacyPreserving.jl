@@ -38,14 +38,13 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
         # Handle the case where resistance is 0 to avoid undefined behaviour
         if branch["br_r"] != 0
             r = b / g # Algorithm 1 and eq. (15)
-            pert_g = g + noise # noisy conductances
-            pert_b = r * pert_g # get noisy susceptances
+            pert_b = b + noise
+            pert_g = pert_b / r
         else
             pert_g = 0
             pert_b = b + noise # Just apply perturbation to b
         end
 
-        r_shunt = g_shunt / b_shunt
         pert_b_shunt = b_shunt + noise_shunt
         pert_g_shunt = g_shunt # Removed the perturbation of g_shunt
 
