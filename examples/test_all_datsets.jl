@@ -74,6 +74,10 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
         output_r_values[l]["x_original"] = data_unpert["branch"][l]["br_x"]
         output_r_values[l]["x_pert"] = imag(1 / (branch["g"] + branch["b"]im))
         output_r_values[l]["x_pert_ratio"] = output_r_values[l]["x_pert"] / output_r_values[l]["x_original"]
+
+        output_r_values[l]["x_shunt_original"] = -1 / data_unpert["branch"][l]["b_to"]
+        output_r_values[l]["x_shunt_pert"] = -1 / branch["b_shunt"]  # Ignore g when calculating x_shunt
+        output_r_values[l]["x_shunt_pert_ratio"] = output_r_values[l]["x_shunt_pert"] / output_r_values[l]["x_shunt_original"]
     end
 
     # Handle writing results to file based on success criteria
@@ -119,7 +123,7 @@ function check_dataset_perturbation(test_directory, output_directory, filename, 
 end
 
 "Set the variable num_cases to determine how many cases to solve"
-num_cases = 40
+num_cases = 25
 start_case = 1
 start_index = 1
 
@@ -132,33 +136,40 @@ catch y
     println("Output folder already exists, continuing")
 end
 
-for run_index = start_index:10
-    run_output_directory = output_directory * string(run_index) * "/"
-    try
-        mkdir(run_output_directory)
-    catch y
-        println("Iteration folder already exists, continuing")
-    end
 
-    try
-        mkdir(string(run_output_directory, "pert_min_loss"))
-        mkdir(string(run_output_directory, "pert_min_cost"))
-        mkdir(string(run_output_directory, "failed_min_loss"))
-        mkdir(string(run_output_directory, "failed_min_cost"))
-        mkdir(string(run_output_directory, "timed_out_min_loss"))
-        mkdir(string(run_output_directory, "timed_out_min_cost"))
-    catch y
-        println("Output subfolders already exist, continuing")
-    end
+β = 0.5
+ϵ = 1
+for run_index = start_index:2
+    for α in [0.01, 0.05, 0.1]
+        for λ in [30, 50, 70]
+            run_output_directory = output_directory * string(run_index) * "_lambda_" * string(λ) * "alpha_" * string(α) * "/"
+            try
+                mkdir(run_output_directory)
+            catch y
+                println("Iteration folder already exists, continuing")
+            end
 
-    # Sort the list of cases by size
-    sorted_directory = sort(
-        readdir(test_directory),
-        by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
-    )
-    for filename in sorted_directory[start_case: num_cases]
-        println("Testing ", filename)
-        check_dataset_perturbation(test_directory, run_output_directory, filename, 0.1, 1, 1, 50)
+            try
+                mkdir(string(run_output_directory, "pert_min_loss"))
+                mkdir(string(run_output_directory, "pert_min_cost"))
+                mkdir(string(run_output_directory, "failed_min_loss"))
+                mkdir(string(run_output_directory, "failed_min_cost"))
+                mkdir(string(run_output_directory, "timed_out_min_loss"))
+                mkdir(string(run_output_directory, "timed_out_min_cost"))
+            catch y
+                println("Output subfolders already exist, continuing")
+            end
+
+            # Sort the list of cases by size
+            sorted_directory = sort(
+                readdir(test_directory),
+                by = f -> parse(Int, strip(split(f, "_")[3][5:end], ['w', 'o', 'p', 's']))
+            )
+            for filename in sorted_directory[start_case: num_cases]
+                println("Testing ", filename)
+                check_dataset_perturbation(test_directory, run_output_directory, filename, α, β, ϵ, λ)
+            end
+        end
     end
     global start_case = 1
 end
