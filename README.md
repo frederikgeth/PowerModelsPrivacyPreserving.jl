@@ -55,4 +55,4 @@ This code has been developed as part of the Privacy-Preserving Technology Energy
 
 ## License
 
-TBD
+This code is provided under a BSD license as part of the "Privacy-Preserving Technologies Energy Pilot Study"
