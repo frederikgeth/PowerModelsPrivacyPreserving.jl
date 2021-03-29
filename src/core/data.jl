@@ -68,6 +68,13 @@ function create_impedance_perturbation(data_input, α, ϵ, λ)
     μ_b = (1 / n) * sum_b + Random.rand(lap_μ, 1)[1] # Eq 17
     μ_g_shunt = (1 / n) * sum_g_shunt + Random.rand(distribution, 1)[1]
     μ_b_shunt = (1 / n) * sum_b_shunt + Random.rand(distribution, 1)[1]
+    # In the case that random perturbations create negative values, floor these at 0
+    if μ_g_shunt < 0
+        μ_g_shunt = 0
+    end
+    if μ_b_shunt < 0
+        μ_b_shunt = 0
+    end
 
     # Add noisy mean limit values to our data dictionary
     # Note that we use min and max to handle negative parameters
