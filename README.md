@@ -2,6 +2,14 @@
 
 PowerModelsPrivacyPreserving.jl is an extension package of PowerModels.jl, to obfuscate values in privacy sensitive (optimal) power flow data sets. The [youtube talk](https://www.youtube.com/watch?v=AEEzt3IjLaM) on PowerModels is a recommended watch. 
 
+## Paper Reference
+https://arxiv.org/abs/2103.14036
+
+## Problem Statement
+For the modeling, design and planning of future energy transmission networks, it is vital for stakeholders to access faithful and useful power flow data, while provably maintaining the privacy of business confidentiality of service providers. This critical challenge has recently been somewhat addressed in [1]. This paper significantly extends this existing work. First, we reduce the potential leakage information by proposing a fundamentally different post-processing method, using public information of grid losses rather than power dispatch, which achieve a higher level of privacy protection. Second, we protect more sensitive parameters, i.e., branch shunt susceptance in addition to series impedance (complete pi-model). This protects power flow data for the transmission high-voltage networks, using differentially private transformations that maintain the optimal power flow consistent with, and faithful to, expected model behaviour. Third, we tested our approach at a larger scale than previous work, using the PGLib-OPF test cases [10]. This resulted in the successful obfuscation of up to a 4700-bus system, which can be successfully solved with faithfulness of parameters and good utility to data analysts. Our approach addresses a more feasible and realistic scenario, and provides higher than state-ofthe-art privacy guarantees, while maintaining solvability, fidelity and feasibility of the system.
+
+1: https://arxiv.org/abs/1901.06949
+
 ## Installation and setup for development
 ### Using Github desktop first
 Clone the package through github desktop to a local folder.
@@ -41,6 +49,20 @@ Some guidelines on where to put code:
 - All the unit test code `test`, and unit test data goes into `test\data`
 - Scripts go into `examples`
 - Don't add things to the root folder
+
+## Examples
+Examples can be found in the examples/test_all_datasets.jl file. The function check_dataset_perturbation contains a testing script to produce a comparison of solutions for the original dataset, and the perturbed datasets given input parameters.
+
+The function check_dataset_perturbation accepts the following inputs:
+test_directory: The directory where the test cases are located
+output_directory: The directory to save output results to
+filename: The filename of the test case
+α: Indistinguishability value (refer to paper)
+β: Objective faithfulness value (refer to paper)
+ϵ: Privacy budget (refer to paper)
+λ: Optimization constraint scale factor (refer to paper)
+
+The solution will be saved to the provided output_directory/ and can be inspected.
 
 ## Acknowledgments
 
